@@ -1,0 +1,1092 @@
+# =============================================================================
+# Shared lab reference ranges / thresholds
+# =============================================================================
+
+SEX_VALUES = ["male", "female"]
+
+GENETIC_RISK_CLASSIFICATIONS = ["Elevated", "Moderately Elevated", "Typical", "Not Reported"]
+ELEVATED_CLASSIFICATIONS = {"Elevated", "Moderately Elevated"}
+
+# --- Lipid Profile ---
+TOTAL_CHOLESTEROL_AT_RISK = 200       # mg/dL
+TOTAL_CHOLESTEROL_ELEVATED = 240      # mg/dL
+LDL_C_NORMAL_CAD = 70                 # mg/dL, preferred ceiling if CAD susceptibility present
+LDL_C_AT_RISK = 130                   # mg/dL
+LDL_C_ELEVATED = 160                  # mg/dL
+LDL_C_SEVERE = 190                    # mg/dL
+HDL_C_MALE_MIN = 40                   # mg/dL
+HDL_C_FEMALE_MIN = 50                 # mg/dL
+HDL_C_MALE_SEVERE = 30                # mg/dL
+HDL_C_FEMALE_SEVERE = 35              # mg/dL
+NON_HDL_C_NORMAL = 130                # mg/dL
+NON_HDL_C_ELEVATED = 160              # mg/dL
+NON_HDL_C_SEVERE = 190                # mg/dL
+VLDL_UPPER_NORMAL = 30                # mg/dL
+TRIGLYCERIDES_AT_RISK = 150           # mg/dL
+TRIGLYCERIDES_ELEVATED = 200          # mg/dL
+TRIGLYCERIDES_SEVERE = 500            # mg/dL
+TRIGLYCERIDES_VERY_SEVERE = 1000      # mg/dL
+TG_HDL_RATIO_ELEVATED = 2.5
+APOB_MALE_RANGE = (60, 130)           # mg/dL
+APOB_FEMALE_RANGE = (55, 125)         # mg/dL
+
+# --- Glucose / Metabolic ---
+FASTING_GLUCOSE_AT_RISK = 100         # mg/dL
+FASTING_GLUCOSE_ELEVATED = 126        # mg/dL
+HBA1C_AT_RISK = 5.7                   # %
+HBA1C_ELEVATED = 6.5                  # %
+FASTING_INSULIN_RANGE = (2, 25)       # uIU/mL
+
+# --- Inflammatory Markers ---
+CRP_AT_RISK = 1.0                     # mg/dL
+CRP_ELEVATED = 3.0                    # mg/dL
+IGE_UPPER_NORMAL = 100                # IU/mL
+FIBRINOGEN_RANGE = (200, 400)         # mg/dL
+FECAL_CALPROTECTIN_AT_RISK = 50       # ug/g
+FECAL_CALPROTECTIN_ELEVATED = 200     # ug/g
+
+def esr_upper_normal(sex, age):
+    """Returns ESR upper limit of normal (mm/hr) by sex and age."""
+    if sex == "male":
+        return 15 if age < 50 else 20
+    else:
+        return 20 if age < 50 else 30
+
+# --- CBC ---
+EOSINOPHILS_UPPER_NORMAL = 0.4        # x10^9/L
+NEUTROPHILS_RANGE = (1.8, 7.5)        # x10^9/L
+PLATELETS_RANGE = (150, 400)          # x10^9/L
+NLR_RANGE = (0.8, 3.5)
+HEMOGLOBIN_MALE_RANGE = (13, 18)      # g/dL
+HEMOGLOBIN_FEMALE_RANGE = (12, 16)    # g/dL
+
+# --- Liver Function / Fibrosis ---
+AST_RANGE = (10, 40)                  # U/L
+ALT_RANGE = (10, 40)                  # U/L
+GGT_RANGE = (9, 50)                   # U/L
+AST_ALT_RATIO_RANGE = (0.7, 1.2)
+FIB4_AT_RISK = 1.3
+FIB4_ELEVATED = 2.67
+ALBUMIN_RANGE = (3.5, 5.5)            # g/dL
+# FIBROSIS_SCORE_ELEVATED_THRESHOLD = None  # "fibrosis scores" referenced generically (TM6SF2 rule), no defined metric/cutoff
+
+# --- Thyroid ---
+TSH_RANGE = (0.4, 4.0)                # mIU/L
+FREE_T4_RANGE = (0.8, 1.8)            # ng/dL
+FREE_T3_RANGE = (2.3, 4.4)            # pg/mL
+TPOAB_UPPER_NORMAL = 35                # IU/mL
+
+# --- Iron studies (HFE) ---
+# FERRITIN_ELEVATED_THRESHOLD = None  # prompt says "ferritin abnormal", no numeric cutoff given
+# TRANSFERRIN_SATURATION_ELEVATED_THRESHOLD = None  # same as above, no numeric cutoff given
+# SERUM_IRON_ELEVATED_THRESHOLD = None  # not referenced with a number anywhere in prompt, included for completeness if needed
+
+CALCIUM_UPPER_NORMAL = 10.2                    # mg/dL
+PTH_UPPER_NORMAL = 65                          # pg/mL
+CK_UPPER_NORMAL = 200                          # U/L
+
+TOTAL_BILIRUBIN_RANGE = (1.2, 4)               # mg/dL (Gilbert)
+DIRECT_BILIRUBIN_LOWER = 0.3                   # mg/dL (Gilbert)
+INDIRECT_BILIRUBIN_UPPER = 5                   # mg/dL (Gilbert)
+AST_UPPER_STRICT = 41                          # U/L (Gilbert, Celiac, Hemochromatosis)
+ALP_RANGE = (40, 129)                          # U/L (Gilbert, Celiac)
+GGT_LFT_RANGE = (10, 47)                       # U/L (Gilbert, Celiac)
+FERRITIN_ELEVATED = 300                        # ng/mL (Hemochromatosis)
+TRANSFERRIN_SATURATION_ELEVATED = 45           # % (Hemochromatosis)
+HEMOGLOBIN_UPPER_HEMOCHROMATOSIS = 18          # g/dL
+MCV_UPPER_HEMOCHROMATOSIS = 100                # fL
+MCH_UPPER_HEMOCHROMATOSIS = 34                 # pg
+VITAMIN_D_DEFICIENT = 20                       # ng/mL (Celiac)
+MCV_LOWER_CELIAC = 82                          # fL
+MCH_LOWER_CELIAC = 27                          # pg
+MCHC_LOWER_CELIAC = 31.5                       # g/dL
+
+# =============================================================================
+# Shared helper functions
+# =============================================================================
+
+def is_elevated(value, threshold):
+    """Returns True if value is present and >= threshold."""
+    return value is not None and value >= threshold
+
+def is_above(value, threshold):
+    """Returns True if value is present and strictly greater than threshold."""
+    return value is not None and value > threshold
+
+def is_below(value, threshold):
+    """Returns True if value is present and < threshold."""
+    return value is not None and value < threshold
+
+def is_outside_range(value, low, high):
+    """Returns True if value is present and outside [low, high]."""
+    return value is not None and (value < low or value > high)
+
+def is_classification_elevated(genetic_risk_classification):
+    """Returns True if the genetic risk classification counts as elevated
+    (Elevated or Moderately Elevated)"""
+    return genetic_risk_classification in ELEVATED_CLASSIFICATIONS
+
+NO_GENE_GATE = "NO_GENE_GATE"
+
+# Gene requirements per condition, from the slide deck
+CONDITION_GENES = {
+    "Alzheimer's Disease": ["APOE"],
+    "Asthma": ["IL13"],
+    "Atopic Dermatitis/Eczema": ["C11orf32/LRRC32", "TSLP", "IL13", "IL4R"],
+    "COPD": NO_GENE_GATE,  # no gene listed
+    "Hyperthyroidism": ["CTLA4", "PTPN22"],
+    "Hypothyroidism": ["CTLA4"],
+    "Inflammatory Bowel Disease": ["NOD2", "ATG16L1", "IL23R", "MYC/POU5F1B", "IL27"],
+    "NAFLD": ["PNPLA3", "TM6SF2"],
+    "Osteoarthritis": ["COL11A1", "SMAD3"],
+    "Parkinson's Disease": ["LRRK2", "GBA"],
+    "Psoriasis": NO_GENE_GATE,  # no gene listed
+    "Rheumatoid Arthritis": ["PTPN22", "STAT4", "TNFAIP3", "CTLA4"],
+    "Rhinitis": ["TSLP"],
+    "Type 2 Diabetes": ["TCF7L2", "SLC30A8"],#------------------------------------------------------------------
+    "Maturity-Onset Diabetes of the Young": ["HNF1A"],
+    "Multiple Endocrine Neoplasia Type 4": ["CDKN1B"],
+    "Muscular Dystrophy": ["DMD", "FKRP", "LMNA", "SGCA", "SGCB"],
+    "Gilbert Syndrome": ["UGT1A1"],
+    "Hereditary Hemochromatosis": ["HFE"],
+    "Celiac Disease": ["HLA-DQ2", "HLA-DQ8"],
+    "Familial Hypercholesterolemia": ["LDLR", "APOB", "PCSK9"],
+    "Cardiomyopathy": [
+        "ACTC1", "BAG3", "DES", "FLNC", "LMNA", "MYBPC3", "MYH7", "MYL2",
+        "MYL3", "PRKAG2", "RBM20", "TNNC1", "TNNI3", "TNNT2", "TPM1", "TTN",
+        "PLN", "DSC2", "DSG2", "DSP", "PKP2", "TMEM43",
+    ],
+    "Coronary Artery Disease": [
+        "ABCA1", "ABCG5", "ABCG8", "APOA1", "APOA5", "APOB", "APOC2", "APOC3",
+        "CREB3L3", "GPIHBP1", "LDLR", "LDLRAP1", "LMF1", "LPL", "PCSK9",
+    ],
+    "Familial Hypertriglyceridemia": ["CREB3L3", "LMF1", "LPL"],
+    "HDL Deficiency": ["ABCA1", "LCAT", "APOA1"],
+    "Elevated Apolipoprotein B": ["APOB"],
+    "Li-Fraumeni Syndrome": ["TP53"],
+    "PTEN Hamartoma Tumor Syndrome": ["PTEN"],
+}
+
+def has_flagged_gene(genetics, condition_name):
+    """Returns True if the condition is exempt from the gene gate
+    (NO_GENE_GATE), or if at least one of its required genes is flagged.
+    Returns False (blocked) if genes are required but none are flagged,
+    or if the condition has no genes configured at all."""
+    required_genes = CONDITION_GENES.get(condition_name, [])
+    if required_genes == NO_GENE_GATE:
+        return True
+    if not required_genes:
+        return False
+    flagged = genetics.get("flagged_genes", [])
+    return any(gene in flagged for gene in required_genes)
+
+# =============================================================================
+# (14)
+# =============================================================================
+
+# Family history and symptoms of respective conditions, are mentioned in the deck for ref
+
+
+GENE_NOT_FOUND = "Related mutation in gene(s) not found"
+
+# Alzheimer's Disease
+def evaluate_alzheimers(labs, patient, genetics, family_history, symptoms=None):
+    if not has_flagged_gene(genetics, "Alzheimer's Disease"):
+        return [{"Condition": "Alzheimer's Disease", "Category": GENE_NOT_FOUND}]
+
+    sex = patient.get("sex")
+    hdl_min = HDL_C_MALE_MIN if sex == "male" else HDL_C_FEMALE_MIN
+
+    ldl_c = labs.get("ldl_c")
+    non_hdl_c = labs.get("non_hdl_c")
+    triglycerides = labs.get("triglycerides")
+    hdl_c = labs.get("hdl_c")
+    fasting_glucose = labs.get("fasting_glucose")
+    hba1c = labs.get("hba1c")
+    crp = labs.get("crp")
+
+    dyslipidemia_flag = (
+        is_elevated(ldl_c, LDL_C_AT_RISK)
+        or is_elevated(non_hdl_c, NON_HDL_C_NORMAL)
+        or is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
+        or is_below(hdl_c, hdl_min)
+    )
+    glycemic_flag = is_elevated(fasting_glucose, FASTING_GLUCOSE_AT_RISK) or is_elevated(hba1c, HBA1C_AT_RISK)
+    crp_flag = is_elevated(crp, CRP_AT_RISK)
+    prediabetic_flag = (
+        (fasting_glucose is not None and 100 <= fasting_glucose <= 125)
+        or (hba1c is not None and 5.7 <= hba1c <= 6.4)
+    )
+
+    if dyslipidemia_flag and glycemic_flag and crp_flag:
+        category = "Likely Disease Onset"
+    elif (dyslipidemia_flag or crp_flag) and prediabetic_flag and family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Alzheimer's Disease", "Category": category}]
+
+
+# Asthma
+def evaluate_asthma(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Asthma"):
+        return [{"Condition": "Asthma", "Category": GENE_NOT_FOUND}]
+
+    eosinophils = labs.get("eosinophils")
+    # neutrophils = labs.get("neutrophils") #just mentioned in parameters, but not in triggers for cases
+    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
+    # neutrophil_flag = is_elevated(neutrophils, NEUTROPHILS_RANGE[1])
+
+    if eosinophil_flag and symptoms and family_history:
+        category = "Likely Disease Onset"
+    # elif (eosinophil_flag or neutrophil_flag) and (symptoms or family_history):
+    elif eosinophil_flag and (symptoms or family_history):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Asthma", "Category": category}]
+
+
+# Atopic Dermatitis
+def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Atopic Dermatitis/Eczema"):
+        return [{"Condition": "Atopic Dermatitis/Eczema", "Category": GENE_NOT_FOUND}]
+
+    eosinophils = labs.get("eosinophils")
+    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
+
+    if eosinophil_flag and symptoms and family_history:
+        category = "Likely Disease Onset"
+    elif eosinophil_flag and (symptoms or family_history):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Atopic Dermatitis/Eczema", "Category": category}]
+
+
+# Chronic Obstruction of Pulmonary Disorder​
+def evaluate_copd(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "COPD"):
+        return [{"Condition": "COPD", "Category": GENE_NOT_FOUND}]
+
+    crp = labs.get("crp")
+    fibrinogen = labs.get("fibrinogen")
+    eosinophils = labs.get("eosinophils")
+    neutrophils = labs.get("neutrophils")
+
+    crp_elevated_flag = is_elevated(crp, CRP_ELEVATED)
+    crp_at_risk_flag = is_elevated(crp, CRP_AT_RISK)
+    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
+    fibrinogen_flag = is_elevated(fibrinogen, FIBRINOGEN_RANGE[1])
+    neutrophil_flag = is_elevated(neutrophils, NEUTROPHILS_RANGE[1])
+
+    if (crp_elevated_flag or fibrinogen_flag) and (eosinophil_flag or neutrophil_flag) and symptoms and family_history:
+        category = "Likely Disease Onset"
+    elif (crp_at_risk_flag or eosinophil_flag) and symptoms:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "COPD", "Category": category}]
+
+
+# Eczema (merged with Atopic dermatitis (as done in prompt))
+# def evaluate_eczema(labs, patient, genetics, family_history, symptoms=False):
+#     if not has_flagged_gene(genetics, "Eczema"):
+#         return [{"Condition": "Eczema", "Category": GENE_NOT_FOUND}]
+
+#     eosinophils = labs.get("eosinophils")
+#     eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
+
+#     if eosinophil_flag and symptoms and family_history:
+#         category = "Likely Disease Onset"
+#     elif eosinophil_flag and (symptoms or family_history):
+#         category = "Early Pattern"
+#     else:
+#         category = "Typical"
+
+#     return [{"Condition": "Eczema", "Category": category}]
+
+
+# Hyperthyroidism
+def evaluate_hyperthyroidism(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Hyperthyroidism"):
+        return [{"Condition": "Hyperthyroidism", "Category": GENE_NOT_FOUND}]
+
+    tsh = labs.get("tsh")
+    free_t3 = labs.get("free_t3")
+    free_t4 = labs.get("free_t4")
+    tpoab = labs.get("tpoab")
+
+    tsh_suppressed = is_below(tsh, TSH_RANGE[0])
+    hormone_flag = (
+        (free_t3 is not None and free_t3 > FREE_T3_RANGE[1])
+        or (free_t4 is not None and free_t4 > FREE_T4_RANGE[1])
+    )
+    tpoab_flag = is_elevated(tpoab, TPOAB_UPPER_NORMAL)
+
+    if tsh_suppressed and hormone_flag and tpoab_flag and (symptoms or family_history):
+        category = "Likely Disease Onset"
+    elif tsh_suppressed and (hormone_flag or tpoab_flag):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Hyperthyroidism", "Category": category}]
+
+# Hypothyroidism
+def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Hypothyroidism"):
+        return [{"Condition": "Hypothyroidism", "Category": GENE_NOT_FOUND}]
+
+    tsh = labs.get("tsh")
+    free_t4 = labs.get("free_t4")
+    tpoab = labs.get("tpoab")
+
+    tsh_high = is_elevated(tsh, 10.0)
+    tsh_mild = tsh is not None and 4.1 <= tsh <= 10.0
+    free_t4_low = is_below(free_t4, FREE_T4_RANGE[0])
+    tpoab_flag = is_elevated(tpoab, TPOAB_UPPER_NORMAL)
+
+    if tsh_high and free_t4_low and tpoab_flag and symptoms:
+        category = "Likely Disease Onset"
+    elif tsh_mild and (tpoab_flag or family_history):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Hypothyroidism", "Category": category}]
+
+
+# Inflammatory Bowel Disease
+def evaluate_ibd(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Inflammatory Bowel Disease"):
+        return [{"Condition": "Inflammatory Bowel Disease", "Category": GENE_NOT_FOUND}]
+
+    sex = patient.get("sex")
+    hb_min = HEMOGLOBIN_MALE_RANGE[0] if sex == "male" else HEMOGLOBIN_FEMALE_RANGE[0]
+
+    crp = labs.get("crp")
+    hemoglobin = labs.get("hemoglobin")
+    albumin = labs.get("albumin")
+
+    crp_flag = is_elevated(crp, CRP_ELEVATED)
+    anemia_flag = is_below(hemoglobin, hb_min)
+    albumin_flag = is_below(albumin, ALBUMIN_RANGE[0])
+
+    if (crp_flag or anemia_flag or albumin_flag) and symptoms and family_history:
+        category = "Likely Disease Onset"
+    elif crp_flag and (symptoms or family_history):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Inflammatory Bowel Disease", "Category": category}]
+
+
+# Non alcoholic fatty liver disease
+def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "NAFLD"):
+        return [{"Condition": "Non Alcoholic Fatty Liver Disease", "Category": GENE_NOT_FOUND}]
+
+    ast = labs.get("ast")
+    alt = labs.get("alt")
+    ggt = labs.get("ggt")
+    fib4 = labs.get("fib4")
+    platelets = labs.get("platelets")
+
+    lft_flag = is_elevated(ast, AST_RANGE[1]) or is_elevated(alt, ALT_RANGE[1]) or is_elevated(ggt, GGT_RANGE[1])
+    fib4_elevated = is_elevated(fib4, FIB4_ELEVATED)
+    fib4_at_risk = fib4 is not None and FIB4_AT_RISK <= fib4 < FIB4_ELEVATED
+    platelets_low = is_below(platelets, PLATELETS_RANGE[0])
+
+    if lft_flag and fib4_elevated and platelets_low and family_history:
+        category = "Likely Disease Onset"
+    elif (lft_flag or fib4_at_risk) and family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Non Alcoholic Fatty Liver Disease", "Category": category}]
+
+
+# Osteoarthritis
+def evaluate_osteoarthritis(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Osteoarthritis"):
+        return [{"Condition": "Osteoarthritis", "Category": GENE_NOT_FOUND}]
+
+    crp = labs.get("crp")
+    crp_flag = is_elevated(crp, CRP_AT_RISK)
+
+    if crp_flag and symptoms and family_history:
+        category = "Likely Disease Onset"
+    elif crp_flag and symptoms:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Osteoarthritis", "Category": category}]
+
+
+# Parkinson's Disease
+def evaluate_parkinsons(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Parkinson's Disease"):
+        return [{"Condition": "Parkinson's Disease", "Category": GENE_NOT_FOUND}]
+
+    sex = patient.get("sex")
+    hdl_min = HDL_C_MALE_MIN if sex == "male" else HDL_C_FEMALE_MIN
+
+    ldl_c = labs.get("ldl_c")
+    triglycerides = labs.get("triglycerides")
+    hdl_c = labs.get("hdl_c")
+    fasting_glucose = labs.get("fasting_glucose")
+    hba1c = labs.get("hba1c")
+    crp = labs.get("crp")
+
+    metabolic_flag = (
+        is_elevated(ldl_c, LDL_C_AT_RISK)
+        or is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
+        or is_below(hdl_c, hdl_min)
+        or is_elevated(fasting_glucose, FASTING_GLUCOSE_AT_RISK)
+        or is_elevated(hba1c, HBA1C_AT_RISK)
+    )
+    crp_flag = is_elevated(crp, CRP_AT_RISK)
+
+    if metabolic_flag and crp_flag and symptoms and family_history:
+        category = "Likely Disease Onset"
+    elif (metabolic_flag or crp_flag) and symptoms:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Parkinson's Disease", "Category": category}]
+
+
+# Psoriasis
+def evaluate_psoriasis(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Psoriasis"):
+        return [{"Condition": "Psoriasis", "Category": GENE_NOT_FOUND}]
+
+    sex = patient.get("sex")
+    age = patient.get("age")
+    esr_max = esr_upper_normal(sex, age) #as per the prompt (children/newborn age case not defined)
+
+    crp = labs.get("crp")
+    esr = labs.get("esr")
+    nlr = labs.get("nlr")
+
+    crp_flag = is_elevated(crp, CRP_ELEVATED)
+    esr_flag = is_elevated(esr, esr_max)
+    nlr_flag = is_elevated(nlr, NLR_RANGE[1])
+
+    if crp_flag and esr_flag and nlr_flag and symptoms:
+        category = "Likely Disease Onset"
+    elif (crp_flag or esr_flag or nlr_flag) and symptoms:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Psoriasis", "Category": category}]
+
+
+#  Rheumatoid Arthritis​
+def evaluate_rheumatoid_arthritis(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Rheumatoid Arthritis"):
+        return [{"Condition": "Rheumatoid Arthritis", "Category": GENE_NOT_FOUND}]
+
+    sex = patient.get("sex")
+    age = patient.get("age")
+    esr_max = esr_upper_normal(sex, age) #as per the prompt (children/newborn age case not defined)
+    hdl_min = HDL_C_MALE_MIN if sex == "male" else HDL_C_FEMALE_MIN
+
+    crp = labs.get("crp")
+    esr = labs.get("esr")
+    hdl_c = labs.get("hdl_c")
+    triglycerides = labs.get("triglycerides")
+
+    inflammatory_flag = is_elevated(crp, CRP_ELEVATED) or is_elevated(esr, esr_max)
+    lipid_flag = is_below(hdl_c, hdl_min) or is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
+
+    if inflammatory_flag and lipid_flag and symptoms and family_history:
+        category = "Likely Disease Onset"
+    elif inflammatory_flag and lipid_flag and symptoms:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Rheumatoid Arthritis", "Category": category}]
+
+
+# Rhinitis 
+def evaluate_rhinitis(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Rhinitis"):
+        return [{"Condition": "Rhinitis", "Category": GENE_NOT_FOUND}]
+
+    eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
+
+    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
+    ige_flag = is_elevated(ige, IGE_UPPER_NORMAL)
+
+    if eosinophil_flag and ige_flag and symptoms and family_history:
+        category = "Likely Disease Onset"
+    elif (eosinophil_flag or ige_flag) and symptoms:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Rhinitis", "Category": category}]
+
+
+# Type 2 Diabetes
+def evaluate_t2d(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Type 2 Diabetes"):
+        return [{"Condition": "Type 2 Diabetes", "Category": GENE_NOT_FOUND}]
+
+    fasting_glucose = labs.get("fasting_glucose")
+    hba1c = labs.get("hba1c")
+
+    elevated_flag = is_elevated(fasting_glucose, FASTING_GLUCOSE_ELEVATED) or is_elevated(hba1c, HBA1C_ELEVATED)
+    prediabetic_flag = (
+        (fasting_glucose is not None and 100 <= fasting_glucose <= 125)
+        or (hba1c is not None and 5.7 <= hba1c <= 6.4)
+    )
+
+    if elevated_flag and symptoms:
+        category = "Likely Disease Onset"
+    elif prediabetic_flag:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Type 2 Diabetes", "Category": category}]
+
+# =========================================================================================================================================================
+
+# Maturity-Onset Diabetes of the Young"
+def evaluate_mody(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Maturity-Onset Diabetes of the Young"):
+        return [{"Condition": "Maturity-Onset Diabetes of the Young", "Category": GENE_NOT_FOUND}]
+
+    hba1c = labs.get("hba1c")
+    fasting_glucose = labs.get("fasting_glucose")
+    age = patient.get("age")
+
+    hyperglycemia = (
+        is_elevated(hba1c, HBA1C_ELEVATED) or
+        is_elevated(fasting_glucose, FASTING_GLUCOSE_ELEVATED)
+    )
+
+    if (hyperglycemia and age < 25) or (hyperglycemia and family_history):
+        category = "Likely Disease Onset"
+    elif hyperglycemia or family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Maturity-Onset Diabetes of the Young", "Category": category}]
+
+
+# Multiple Endocrine Neoplasia Type 4
+def evaluate_men4(labs, patient, genetics, family_history, endocrine_conditions=None):
+    if not has_flagged_gene(genetics, "Multiple Endocrine Neoplasia Type 4"):
+        return [{"Condition": "Multiple Endocrine Neoplasia Type 4", "Category": GENE_NOT_FOUND}]
+
+    calcium = labs.get("calcium")
+    pth = labs.get("pth")
+
+    hypercalcemia = is_above(calcium, CALCIUM_UPPER_NORMAL)
+    elevated_pth = is_above(pth, PTH_UPPER_NORMAL)
+    phpt_pattern = hypercalcemia and elevated_pth
+
+    if phpt_pattern and (endocrine_conditions or family_history):
+        category = "Likely Disease Onset"
+    elif endocrine_conditions and family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Multiple Endocrine Neoplasia Type 4", "Category": category}]
+
+
+# Muscular Dystrophy
+def evaluate_muscular_dystrophy(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Muscular Dystrophy"):
+        return [{"Condition": "Muscular Dystrophy", "Category": GENE_NOT_FOUND}]
+
+    ck = labs.get("ck")
+
+    ck_significant_multiple = CK_UPPER_NORMAL * 10
+    ck_moderate_multiple = CK_UPPER_NORMAL * 5
+
+    marked_ck_elevation = is_elevated(ck, ck_significant_multiple)
+    moderate_ck_elevation = is_elevated(ck, ck_moderate_multiple)
+
+    if marked_ck_elevation and (symptoms or family_history):
+        category = "Likely Disease Onset"
+    elif moderate_ck_elevation and (symptoms or family_history):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Muscular Dystrophy", "Category": category}]
+
+
+# Gilbert Syndrome
+def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Gilbert Syndrome"):
+        return [{"Condition": "Gilbert Syndrome", "Category": GENE_NOT_FOUND}]
+
+    total_bilirubin = labs.get("total_bilirubin")
+    direct_bilirubin = labs.get("direct_bilirubin")
+    indirect_bilirubin = labs.get("indirect_bilirubin")
+    alt = labs.get("alt")
+    ast = labs.get("ast")
+    alp = labs.get("alp")
+    ggt = labs.get("ggt")
+
+    parameter = (
+        total_bilirubin is not None and TOTAL_BILIRUBIN_RANGE[0] < total_bilirubin < TOTAL_BILIRUBIN_RANGE[1] and
+        direct_bilirubin is not None and direct_bilirubin > DIRECT_BILIRUBIN_LOWER and
+        indirect_bilirubin is not None and indirect_bilirubin < INDIRECT_BILIRUBIN_UPPER and
+        alt is not None and alt <= ALT_RANGE[1] and
+        ast is not None and ast <= AST_UPPER_STRICT and
+        alp is not None and ALP_RANGE[0] < alp <= ALP_RANGE[1] and
+        ggt is not None and GGT_LFT_RANGE[0] < ggt <= GGT_LFT_RANGE[1]
+    )
+
+    if (
+        (parameter and family_history and symptoms and past_history) or
+        (parameter and family_history and past_history) or
+        (parameter and family_history) or
+        (family_history and symptoms) or
+        (family_history and past_history)
+    ):
+        category = "Likely Disease Onset"
+    elif (
+        family_history or
+        (parameter and symptoms and past_history) or
+        (parameter and past_history)
+    ):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Gilbert Syndrome", "Category": category}]
+
+# Hereditary Hemochromatosis
+def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Hereditary Hemochromatosis"):
+        return [{"Condition": "Hereditary Hemochromatosis", "Category": GENE_NOT_FOUND}]
+
+    iron_profile_done = labs.get("iron_profile_done") #####
+    ferritin = labs.get("ferritin")
+    transferrin_saturation = labs.get("transferrin_saturation")
+    alt = labs.get("alt")
+    ast = labs.get("ast")
+    hemoglobin = labs.get("hemoglobin")
+    mcv = labs.get("mcv")
+    mch = labs.get("mch")
+
+    abnormal_labs = (
+        is_above(alt, ALT_RANGE[1]) and
+        is_above(ast, AST_UPPER_STRICT) and
+        is_above(hemoglobin, HEMOGLOBIN_UPPER_HEMOCHROMATOSIS) and
+        is_above(mcv, MCV_UPPER_HEMOCHROMATOSIS) and
+        is_above(mch, MCH_UPPER_HEMOCHROMATOSIS)    
+    )
+
+    if iron_profile_done is True:
+        tsat_low = is_below(transferrin_saturation, TRANSFERRIN_SATURATION_ELEVATED)
+        ferritin_not_elevated = ferritin is not None and ferritin <= FERRITIN_ELEVATED
+
+        if tsat_low and ferritin_not_elevated:
+            return [{"Condition": "Hereditary Hemochromatosis", "Category": "Unlikely"}]
+
+        tsat_elevated = is_elevated(transferrin_saturation, TRANSFERRIN_SATURATION_ELEVATED)
+        ferritin_elevated = is_above(ferritin, FERRITIN_ELEVATED)
+
+        if tsat_elevated and ferritin_elevated:
+            score = sum([family_history, symptoms, past_history, abnormal_labs])
+            if score >= 3:
+                category = "Likely Disease Onset"
+            elif score >= 1:
+                category = "Early Pattern"
+            else:
+                category = "Typical"
+            return [{"Condition": "Hereditary Hemochromatosis", "Category": category}]
+
+        return [{"Condition": "Hereditary Hemochromatosis", "Category": "Typical"}]
+
+    if iron_profile_done is False:
+        score = sum([family_history, symptoms, past_history, abnormal_labs])
+        if score >= 3:
+            category = "Likely Disease Onset"
+        elif score >= 1:
+            category = "Early Pattern"
+        else:
+            category = "Typical"
+        return [{"Condition": "Hereditary Hemochromatosis", "Category": category}]
+    return [{
+        "Condition": "Hereditary Hemochromatosis",
+        "Category": "Relevant lab parameters not found",
+    }]
+
+
+# Celiac Disease
+def evaluate_celiac_disease(labs, patient, genetics, family_history, past_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Celiac Disease"):
+        return [{"Condition": "Celiac Disease", "Category": GENE_NOT_FOUND}]
+
+    vitamin_d = labs.get("vitamin_d")
+    alt = labs.get("alt")
+    ast = labs.get("ast")
+    alp = labs.get("alp")
+    ggt = labs.get("ggt")
+    mcv = labs.get("mcv")
+    mch = labs.get("mch")
+    mchc = labs.get("mchc")
+
+    parameter = (
+        is_below(vitamin_d, VITAMIN_D_DEFICIENT) and
+        is_above(alt, ALT_RANGE[1]) and            
+        is_above(ast, AST_UPPER_STRICT) and        
+        is_above(ggt, GGT_LFT_RANGE[1]) and        
+        is_above(alp, ALP_RANGE[1]) and             
+        is_below(mcv, MCV_LOWER_CELIAC) and
+        is_below(mch, MCH_LOWER_CELIAC) and
+        is_below(mchc, MCHC_LOWER_CELIAC)
+    )
+
+    if (
+        (parameter and family_history and symptoms and past_history) or
+        (parameter and family_history and past_history) or
+        (parameter and family_history) or
+        (family_history and symptoms) or
+        (family_history and past_history)
+    ):
+        category = "Likely Disease Onset"
+    elif (
+        family_history or
+        (parameter and symptoms and past_history) or
+        (parameter and past_history)
+    ):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Celiac Disease", "Category": category}]
+
+
+# Familial Hypercholesterolemia
+def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Familial Hypercholesterolemia"):
+        return [{"Condition": "Familial Hypercholesterolemia", "Category": GENE_NOT_FOUND}]
+
+    ldl = labs.get("ldl_c")
+    non_hdl = labs.get("non_hdl_c")
+    age = patient.get("age")
+
+    elevated_160 = is_above(ldl, LDL_C_ELEVATED) or is_above(non_hdl, NON_HDL_C_ELEVATED)
+    elevated_190 = is_above(ldl, LDL_C_SEVERE) or is_above(non_hdl, NON_HDL_C_SEVERE)
+
+    if elevated_190 or (elevated_160 and age < 40) or (elevated_160 and family_history):
+        category = "Likely Disease Onset"
+    elif elevated_160 or family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Familial Hypercholesterolemia", "Category": category}]
+
+
+# Cardiomyopathy
+def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=False, imaging_performed=False, imaging_findings=None,):
+    if not has_flagged_gene(genetics, "Cardiomyopathy"):
+        return [{"Condition": "Cardiomyopathy", "Category": GENE_NOT_FOUND}]
+
+    hemoglobin = labs.get("hemoglobin")
+    eosinophils_absolute = labs.get("eosinophils_absolute")
+    sex = patient.get("sex")
+
+    HIGH_SPECIFICITY_FINDINGS = [] #to be defined as a subset of imaging findings
+    
+    imaging_findings = imaging_findings or []
+    real_findings = [f for f in imaging_findings if f != "Normal"]
+
+    imaging_abnormal = imaging_performed and len(real_findings) > 0
+    imaging_multiple = imaging_performed and len(real_findings) >= 2
+    imaging_high_spec = imaging_performed and any(
+        f in HIGH_SPECIFICITY_FINDINGS for f in real_findings
+    )
+
+    hb_normal = 13 if sex == "male" else 11.5
+    hb_severely_low = is_below(hemoglobin, hb_normal - 2)
+    eos_high = is_elevated(eosinophils_absolute, 1500)
+    labs_severe = hb_severely_low or eos_high
+
+    if hemoglobin is None and eosinophils_absolute is None and not imaging_performed:
+        return [{
+            "Condition": "Cardiomyopathy",
+            "Category": "Relevant lab/imaging parameters not found",
+        }]
+
+    # --- Case 1: imaging performed and abnormal -> imaging drives the call ---
+    if imaging_performed and imaging_abnormal:
+        if imaging_high_spec or imaging_multiple or symptoms or family_history:
+            category = "Likely Disease Onset"
+        else:
+            category = "Early Pattern"
+
+    # --- Case 2: imaging performed and normal ---
+    elif imaging_performed and not imaging_abnormal:
+        risk_factor_count = sum([family_history, symptoms, labs_severe])
+        if risk_factor_count >= 2:
+            category = "Re-imaging recommended (Echocardiogram/Cardiac MRI)"
+        else:
+            category = "Typical"
+
+    # --- Case 3: no imaging performed -> route to imaging ---
+    else:
+        if labs_severe or family_history or symptoms:
+            category = "Advanced cardiac imaging recommended (Echocardiogram/Cardiac MRI)"
+        else:
+            category = "Typical"
+
+    return [{"Condition": "Cardiomyopathy", "Category": category}]
+
+
+# Coronary Artery Disease
+def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Coronary Artery Disease"):
+        return [{"Condition": "Coronary Artery Disease", "Category": GENE_NOT_FOUND}]
+
+    ldl = labs.get("ldl_c")
+    non_hdl = labs.get("non_hdl_c")
+    hdl = labs.get("hdl_c")
+    triglycerides = labs.get("triglycerides")
+    hba1c = labs.get("hba1c")
+    age = patient.get("age")
+    sex = patient.get("sex")
+
+    hdl_min = HDL_C_MALE_MIN if sex == "male" else HDL_C_FEMALE_MIN
+
+    ldl_moderate = is_elevated(ldl, LDL_C_AT_RISK) or is_elevated(non_hdl, NON_HDL_C_ELEVATED)
+    low_hdl = is_below(hdl, hdl_min)
+    tg_moderate = is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
+    prediabetes = is_elevated(hba1c, HBA1C_AT_RISK)
+    any_moderate = ldl_moderate or low_hdl or tg_moderate or prediabetes
+
+    ldl_high = is_elevated(ldl, LDL_C_ELEVATED) or is_elevated(non_hdl, NON_HDL_C_SEVERE)
+    diabetes = is_elevated(hba1c, HBA1C_ELEVATED)
+    combined_atherogenic = ldl_moderate and low_hdl and tg_moderate
+
+    if (
+        ldl_high or
+        diabetes or
+        combined_atherogenic or
+        (any_moderate and symptoms and age < 40) or
+        (any_moderate and symptoms and family_history)
+    ):
+        category = "Likely Disease Onset"
+    elif family_history or (any_moderate and symptoms):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Coronary Artery Disease", "Category": category}]
+
+# Familial Hypertriglyceridemia
+def evaluate_hypertriglyceridemia(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Familial Hypertriglyceridemia"):
+        return [{"Condition": "Familial Hypertriglyceridemia", "Category": GENE_NOT_FOUND}]
+
+    triglycerides = labs.get("triglycerides")
+    hdl = labs.get("hdl_c")
+    vldl = labs.get("vldl")
+    sex = patient.get("sex")
+    age = patient.get("age")
+
+    hdl_normal = HDL_C_MALE_MIN if sex == "male" else HDL_C_FEMALE_MIN
+    hdl_low = is_below(hdl, hdl_normal)
+    hdl_severely_low = is_below(hdl, HDL_C_MALE_SEVERE if sex == "male" else HDL_C_FEMALE_SEVERE)
+
+    tg_borderline = is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
+    tg_moderate = is_elevated(triglycerides, TRIGLYCERIDES_ELEVATED)
+    tg_severe = is_elevated(triglycerides, TRIGLYCERIDES_SEVERE)
+    tg_very_severe = is_elevated(triglycerides, TRIGLYCERIDES_VERY_SEVERE)
+
+    vldl_elevated = is_elevated(vldl, VLDL_UPPER_NORMAL)
+    any_moderate_abnormal = tg_moderate or hdl_low or vldl_elevated
+
+    if (
+        tg_very_severe or
+        (tg_severe and age < 40) or
+        (tg_severe and family_history) or
+        (tg_severe and hdl_severely_low)
+    ):
+        category = "Likely Disease Onset"
+    elif (
+        tg_severe or
+        any_moderate_abnormal or
+        (tg_borderline and hdl_low) or
+        family_history
+    ):
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Familial Hypertriglyceridemia", "Category": category}]
+
+# HDL Deficiency
+def evaluate_hdl_deficiency(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "HDL Deficiency"):
+        return [{"Condition": "HDL Deficiency", "Category": GENE_NOT_FOUND}]
+
+    triglycerides = labs.get("triglycerides")
+    hdl = labs.get("hdl_c")
+    ldl = labs.get("ldl_c")
+    sex = patient.get("sex")
+    age = patient.get("age")
+
+    hdl_normal = HDL_C_MALE_MIN if sex == "male" else HDL_C_FEMALE_MIN
+    hdl_low = is_below(hdl, hdl_normal)
+    hdl_severe = is_below(hdl, 25 if sex == "male" else 30)
+
+    tg_elevated = is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
+    ldl_elevated = is_elevated(ldl, LDL_C_ELEVATED)
+
+    isolated_significant = hdl_severe and not tg_elevated and not ldl_elevated
+    isolated_moderate = hdl_low and not tg_elevated and not ldl_elevated
+    mixed_moderate = hdl_low and (tg_elevated or ldl_elevated)
+
+    if (
+        isolated_significant or
+        (isolated_moderate and (age < 40 or family_history))
+    ):
+        category = "Likely Disease Onset"
+    elif isolated_moderate or mixed_moderate or family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "HDL Deficiency", "Category": category}]
+
+
+# Elevated Apolipoprotein B
+def evaluate_apob(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Elevated Apolipoprotein B"):
+        return [{"Condition": "Elevated Apolipoprotein B", "Category": GENE_NOT_FOUND}]
+
+    apob = labs.get("apob")
+    age = patient.get("age")
+
+    elevated_100 = is_elevated(apob, 100)
+    elevated_130 = is_elevated(apob, 130)
+
+    if elevated_130 or (elevated_100 and age < 40) or (elevated_100 and family_history):
+        category = "Likely Disease Onset"
+    elif elevated_100 or family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Elevated Apolipoprotein B", "Category": category}]
+
+
+# Li-Fraumeni Syndrome
+def evaluate_li_fraumeni_syndrome(labs, patient, genetics, family_history, symptoms=False, conditions=None):
+    if not has_flagged_gene(genetics, "Li-Fraumeni Syndrome"):
+        return [{"Condition": "Li-Fraumeni Syndrome", "Category": GENE_NOT_FOUND}]
+
+    age = patient.get("age")
+    conditions = conditions or []
+
+    pathognomonic_tumors = [
+        "Adrenocortical carcinoma", "Choroid plexus carcinoma",
+        "Embryonal rhabdomyosarcoma, anaplastic subtype"
+    ]
+    lfs_spectrum_tumors = [
+        "Sarcoma", "Osteosarcoma", "Breast cancer", "Brain tumor",
+        "Adrenocortical carcinoma", "Leukemia", "Choroid plexus carcinoma",
+        "Embryonal rhabdomyosarcoma, anaplastic subtype"
+    ]
+
+    has_pathognomonic_tumor = any(t in conditions for t in pathognomonic_tumors)
+    proband_lfs_tumors = [t for t in lfs_spectrum_tumors if t in conditions]
+    has_lfs_tumor = len(proband_lfs_tumors) > 0
+    multiple_primaries = len(proband_lfs_tumors) >= 2
+
+    early_onset = age is not None and age < 46
+
+    very_early_breast_cancer = (
+        "Breast cancer" in conditions and age is not None and age < 31
+    )
+
+    if (
+        has_pathognomonic_tumor or
+        very_early_breast_cancer or
+        family_history or
+        multiple_primaries or
+        (has_lfs_tumor and early_onset and family_history)
+    ):
+        category = "Likely Disease Onset"
+    elif has_lfs_tumor or family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "Li-Fraumeni Syndrome", "Category": category}]
+
+
+# PTEN Hamartoma Tumor Syndrome
+def evaluate_phts(labs, patient, genetics, family_history, symptoms=False, conditions=None):
+    if not has_flagged_gene(genetics, "PTEN Hamartoma Tumor Syndrome"):
+        return [{"Condition": "PTEN Hamartoma Tumor Syndrome", "Category": GENE_NOT_FOUND}]
+
+    conditions = conditions or []
+
+    major_count = sum([
+        "Macrocephaly" in conditions,
+        "Multiple trichilemmomas" in conditions,
+        "Multiple oral papillomas" in conditions,
+        "Multiple gastrointestinal hamartomas" in conditions,
+    ])
+    minor_count = sum([
+        "Autism spectrum disorder" in conditions,
+        "Developmental delay" in conditions,
+        "Vascular anomaly" in conditions,
+        "Gastrointestinal polyps" in conditions,
+        "Intellectual disability" in conditions,
+        "Thyroid nodule" in conditions,
+        "Lipoma" in conditions,
+    ])
+
+    macrocephaly = "Macrocephaly" in conditions
+    gi_hamartoma = "Multiple gastrointestinal hamartomas" in conditions
+
+    macrocephaly_plus = (
+        macrocephaly and
+        any([
+            "Autism spectrum disorder" in conditions,
+            "Developmental delay" in conditions,
+            "Vascular anomaly" in conditions,
+            "Gastrointestinal polyps" in conditions,
+        ])
+    )
+
+    if (
+        macrocephaly_plus or
+        (major_count >= 3 and (macrocephaly or gi_hamartoma)) or
+        (major_count >= 2 and minor_count >= 3)
+    ):
+        category = "Likely Disease Onset"
+    elif major_count >= 1 or minor_count >= 2 or family_history:
+        category = "Early Pattern"
+    else:
+        category = "Typical"
+
+    return [{"Condition": "PTEN Hamartoma Tumor Syndrome", "Category": category}]
