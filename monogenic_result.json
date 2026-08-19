@@ -1,0 +1,21 @@
+[
+  {
+    "Category": "Skin Health, Vision",
+    "Gene Symbol": "HPS3",
+    "preferredVarTitle": "rs763305108",
+    "HGVS": "c.995_996dupAT",
+    "condition / ACMG Diseases": "Hermansky-Pudlak syndrome 3",
+    "ClinVar Significance": "Pathogenic",
+    "ClinVar Stars": "2",
+    "Evidence": "At least two submitters agree, with no conflicting interpretations",
+    "Expert Panel": "",
+    "MOI": "AR",
+    "VAF": "0.5",
+    "COPIES": 1,
+    "Intervention": "",
+    "RAF_global": "1.2392955843898327e-06",
+    "RAF_SAS": "2.1963058136214887e-05",
+    "Findings": "HPS3 gene has one heterozygous pathogenic variant detected that is associated with Hermansky-Pudlak syndrome 3.",
+    "Interpretation": "Hermansky-Pudlak syndrome 3 follows an autosomal recessive inheritance pattern. Detection of a single pathogenic variant suggests carrier status. Two pathogenic variants, typically one inherited from each parent and confirmed to be in trans, are generally required for disease manifestation."
+  }
+]
