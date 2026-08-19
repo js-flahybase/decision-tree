@@ -6,7 +6,7 @@ A set of Python functions — one per condition — that evaluate a patient's ri
 
 Each function looks at three things:
 
-1. **Was the relevant gene flagged in the patient's genetic report?**
+1. **Was the relevant gene flagged, or is the polygenic risk score (PRS) elevated, for this condition?**
 2. **Are the relevant blood test values abnormal?**
 3. **Does the patient have relevant symptoms, family history, or past history?**
 
@@ -20,7 +20,7 @@ Every function follows the same general pattern:
 
 ```python
 def evaluate_<condition>(labs, patient, genetics, family_history, symptoms=False, ...):
-    # 1. Check gene first — nothing else matters if it's not present
+    # 1. Check gene/PRS first — nothing else matters if neither is present
     if not has_flagged_gene(genetics, "<Condition Name>"):
         return [{
             "Condition": "<Condition Name>",
@@ -49,13 +49,38 @@ def evaluate_<condition>(labs, patient, genetics, family_history, symptoms=False
 
 ---
 
-## Three Types of Input
+## Gene Gate: Monogenic Flag OR Polygenic (PRS) Elevation
+
+`has_flagged_gene(genetics, condition_name)` decides whether a condition even gets evaluated, and it now passes if **either** of these is true:
+
+1. **Monogenic hit** — a specific gene tied to this condition (via `CONDITION_GENES`) was flagged as Pathogenic/Likely Pathogenic.
+2. **Polygenic (PRS) elevation** — this condition has a polygenic risk score entry, and its category is `elevated` or `moderately_elevated`.
+
+A small number of conditions (currently COPD, Psoriasis) have no known gene association at all — these use `NO_GENE_GATE` and always proceed straight to lab/symptom evaluation, regardless of genetics.
+
+If neither a gene nor a PRS signal is present (and the condition isn't `NO_GENE_GATE`), the function returns immediately with `GENE_NOT_FOUND` — no lab or symptom data is checked at all.
+
+---
+
+## Five Types of Input
 
 | Input | Where it comes from | Type | Example |
 |---|---|---|---|
-| **Blood test values (`labs`)** | Lab report PDF | Numbers | `hba1c: 6.8`, `ldl_c: 175` |
-| **Gene flags (`genetics`)** | Genetic report PDF | List of gene names | `["HFE", "TP53"]` |
-| **Patient-reported context** (`family_history`, `symptoms`, `past_history`) | Asked to / reported by the patient | `True` / `False` | `family_history of Alzheimers: True` |
+| **Blood test values (`labs`)** | Blood report CSV | Numbers | `hba1c: 6.8`, `ldl_c: 175` |
+| **Monogenic gene flags** | Monogenic (ClinVar-style) JSON — Pathogenic/Likely Pathogenic entries | List of gene names | `["HFE", "TP53"]` |
+| **Polygenic (PRS) scores** | Polygenic risk score JSON | Per-condition category (`typical` / `elevated` / `moderately_elevated`) | `"cad": {"category": "elevated"}` |
+| **APOE status** | APOE-specific JSON | Genotype string | `"e3/e4"` — contributes an `APOE` gene flag if an ε4 allele is present |
+| **Patient-reported context** (`family_history`, `symptoms`, `past_history`) | Asked to / reported by the patient | `True` / `False` | `family_history of Alzheimer's: True` |
+
+`genetics` (passed into every function) is a single dict combining all three genetic sources:
+```python
+{
+    "flagged_genes": [...],            # from the monogenic JSON + APOE (if ε4 present)
+    "prs_elevated_conditions": {...},  # set of condition keys from the PRS JSON where category is elevated
+    "apoe_status": "e3/e4",            # raw APOE genotype string
+}
+```
+This dict is built once per patient by `build_genetics_from_jsons(...)`, not assembled inside each function.
 
 ---
 
@@ -90,10 +115,20 @@ Therefore, a missing laboratory value **never causes the function to crash**; it
 
 ---
 
+## Running the Script
+
+```bash
+python script.py <monogenic.json> <prs.json> <apoe.json> <blood.csv> <output.csv> --sex male --age 35
+```
+
+This runs all 28 condition functions against the supplied data and writes every non-`GENE_NOT_FOUND` result to `output.csv` (columns: `Condition`, `Category`).
+
+---
+
 ## Summary
 
 The evaluation framework follows a consistent pattern:
 
-**Genetic flag → Relevant clinical/laboratory data → Clinical context → Risk category**
+**Genetic flag (monogenic OR polygenic) → Relevant clinical/laboratory data → Clinical context → Risk category**
 
 This allows each condition-specific function to use the same overall structure while applying condition-specific thresholds and combinations of clinical evidence.
