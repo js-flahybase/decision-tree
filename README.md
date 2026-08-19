@@ -62,6 +62,17 @@ If neither a gene nor a PRS signal is present (and the condition isn't `NO_GENE_
 
 ---
 
+## Output Columns
+
+Each result includes two extra fields beyond `Condition` and `Category`:
+
+- **Triggering Genetics** — which gene(s) and/or PRS entry actually passed the gate (e.g. `HFE` or `PRS:cad`)
+- **Triggering Parameters** — which specific lab values crossed a threshold, and by how much (e.g. `crp=3.2 (>=3.0)`)
+
+This makes it possible to see *why* a category was reached, not just the final result.
+
+---
+
 ## Five Types of Input
 
 | Input | Where it comes from | Type | Example |

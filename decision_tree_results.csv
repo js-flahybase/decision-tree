@@ -1,10 +1,10 @@
-Condition,Category
-Atopic Dermatitis/Eczema,Early Pattern
-COPD,Early Pattern
-Inflammatory Bowel Disease,Early Pattern
-Non Alcoholic Fatty Liver Disease,Early Pattern
-Osteoarthritis,Early Pattern
-Parkinson's Disease,Early Pattern
-Psoriasis,Early Pattern
-Rhinitis,Early Pattern
-Coronary Artery Disease,Likely Disease Onset
+Condition,Category,Triggering Genetics,Triggering Parameters
+Atopic Dermatitis/Eczema,Early Pattern,PRS:atopicdermatitis,eosinophils=9.0 (>=0.4)
+COPD,Early Pattern,,"crp=4.5 (>=3.0), crp=4.5 (>=1.0), eosinophils=9.0 (>=0.4)"
+Inflammatory Bowel Disease,Early Pattern,PRS:ibd,crp=4.5 (>=3.0)
+Non Alcoholic Fatty Liver Disease,Early Pattern,PRS:nafld,ast=48.0 (>=40)
+Osteoarthritis,Early Pattern,PRS:osteoarthritis,crp=4.5 (>=1.0)
+Parkinson's Disease,Early Pattern,PRS:parkinson,"ldl_c=205.0 (>=130), crp=4.5 (>=1.0)"
+Psoriasis,Early Pattern,PRS:psoriasis,"crp=4.5 (>=3.0), esr=35.0 (>=15)"
+Rhinitis,Early Pattern,PRS:rhinitis,eosinophils=9.0 (>=0.4)
+Coronary Artery Disease,Likely Disease Onset,PRS:cad,"ldl_c=205.0 (>=130), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7), ldl_c=205.0 (>=160)"

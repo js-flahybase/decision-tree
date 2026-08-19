@@ -108,8 +108,13 @@ def load_patient_data(monogenic_json, prs_json, apoe_json, blood_csv_path, sex, 
     )
     
     genetics = build_genetics_from_jsons(monogenic_json, prs_json, apoe_json)
-
+    
     patient = {"sex": sex, "age": age}
+
+    # just to check
+    print(f"Patient: {patient}")
+    print(f"Genetics: {genetics}")
+    print(f"Labs: {labs}") #would also add an "iron_profile_done" entry
 
     return {
         "patient": patient,
@@ -263,6 +268,19 @@ def is_outside_range(value, low, high):
 #     (Elevated or Moderately Elevated)"""
 #     return genetic_risk_classification in ELEVATED_CLASSIFICATIONS
 
+# added
+def note(triggered, label, value, condition_bool, threshold_desc=""):
+    """Appends 'label=value (threshold_desc)' to triggered if condition_bool is True. Returns
+    condition_bool unchanged, so this can be dropped in-place around any
+    is_elevated/is_below/is_above/is_outside_range call. threshold_desc should describe the
+    threshold that was crossed, e.g. ">=130" or "<40" or "outside [150,400]"."""
+    if condition_bool:
+        entry = f"{label}={value}"
+        if threshold_desc:
+            entry += f" ({threshold_desc})"
+        triggered.append(entry)
+    return condition_bool
+
 # for conditions to be run be default without any gene/prs check 
 NO_GENE_GATE = "NO_GENE_GATE"
 
@@ -332,6 +350,29 @@ def has_flagged_gene(genetics, condition_name):
     flagged = genetics.get("flagged_genes", [])
     return any(gene in flagged for gene in required_genes)
 
+# added
+def get_gene_trigger(genetics, condition_name):
+    """Returns a string describing what passed the gene/PRS gate for this condition:
+    matched flagged gene(s) and/or 'PRS:<key>' if the condition's PRS entry is elevated.
+    Returns '' for NO_GENE_GATE conditions or when nothing matched (shouldn't happen if
+    has_flagged_gene already returned True)."""
+    required_genes = CONDITION_GENES.get(condition_name, [])
+    parts = []
+
+    if required_genes != NO_GENE_GATE and required_genes:
+        flagged = genetics.get("flagged_genes", [])
+        parts.extend(gene for gene in required_genes if gene in flagged)
+
+    prs_key = None
+    for key, mapped_name in PRS_CONDITION_KEY_MAP.items():
+        if mapped_name == condition_name:
+            prs_key = key
+            break
+    if prs_key is not None and prs_key in genetics.get("prs_elevated_conditions", set()):
+        parts.append(f"PRS:{prs_key}")
+
+    return ", ".join(parts)
+
 # =============================================================================
 # (14)
 # =============================================================================
@@ -356,17 +397,21 @@ def evaluate_alzheimers(labs, patient, genetics, family_history, symptoms=False)
     hba1c = labs.get("hba1c")
     crp = labs.get("crp")
 
+    triggered = []
     dyslipidemia_flag = (
-        is_elevated(ldl_c, LDL_C_AT_RISK)
-        or is_elevated(non_hdl_c, NON_HDL_C_NORMAL)
-        or is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
-        or is_below(hdl_c, hdl_min)
+        note(triggered, "ldl_c", ldl_c, is_elevated(ldl_c, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
+        or note(triggered, "non_hdl_c", non_hdl_c, is_elevated(non_hdl_c, NON_HDL_C_NORMAL), f">={NON_HDL_C_NORMAL}")
+        or note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
+        or note(triggered, "hdl_c", hdl_c, is_below(hdl_c, hdl_min), f"<{hdl_min}")
     )
-    glycemic_flag = is_elevated(fasting_glucose, FASTING_GLUCOSE_AT_RISK) or is_elevated(hba1c, HBA1C_AT_RISK)
-    crp_flag = is_elevated(crp, CRP_AT_RISK)
+    glycemic_flag = (
+        note(triggered, "fasting_glucose", fasting_glucose, is_elevated(fasting_glucose, FASTING_GLUCOSE_AT_RISK), f">={FASTING_GLUCOSE_AT_RISK}")
+        or note(triggered, "hba1c", hba1c, is_elevated(hba1c, HBA1C_AT_RISK), f">={HBA1C_AT_RISK}")
+    )
+    crp_flag = note(triggered, "crp", crp, is_elevated(crp, CRP_AT_RISK), f">={CRP_AT_RISK}")
     prediabetic_flag = (
-        (fasting_glucose is not None and 100 <= fasting_glucose <= 125)
-        or (hba1c is not None and 5.7 <= hba1c <= 6.4)
+        note(triggered, "fasting_glucose", fasting_glucose, fasting_glucose is not None and 100 <= fasting_glucose <= 125, "[100-125]")
+        or note(triggered, "hba1c", hba1c, hba1c is not None and 5.7 <= hba1c <= 6.4, "[5.7-6.4]")
     )
 
     if dyslipidemia_flag and glycemic_flag and crp_flag and family_history:
@@ -376,7 +421,11 @@ def evaluate_alzheimers(labs, patient, genetics, family_history, symptoms=False)
     else:
         category = "Typical"
 
-    return [{"Condition": "Alzheimer's Disease", "Category": category}]
+    return [{
+        "Condition": "Alzheimer's Disease", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Alzheimer's Disease"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Asthma
@@ -386,7 +435,8 @@ def evaluate_asthma(labs, patient, genetics, family_history, symptoms=False):
 
     eosinophils = labs.get("eosinophils")
     # neutrophils = labs.get("neutrophils") #just mentioned in parameters, but not in triggers for cases
-    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
+    triggered = []
+    eosinophil_flag = note(triggered, "eosinophils", eosinophils, is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL), f">={EOSINOPHILS_UPPER_NORMAL}")
     # neutrophil_flag = is_elevated(neutrophils, NEUTROPHILS_RANGE[1])
 
     if eosinophil_flag and symptoms and family_history:
@@ -397,7 +447,11 @@ def evaluate_asthma(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Asthma", "Category": category}]
+    return [{
+        "Condition": "Asthma", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Asthma"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Atopic Dermatitis/Eczema
@@ -406,7 +460,8 @@ def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, symptoms
         return [{"Condition": "Atopic Dermatitis/Eczema", "Category": GENE_NOT_FOUND}]
 
     eosinophils = labs.get("eosinophils")
-    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
+    triggered = []
+    eosinophil_flag = note(triggered, "eosinophils", eosinophils, is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL), f">={EOSINOPHILS_UPPER_NORMAL}")
 
     if eosinophil_flag and symptoms and family_history:
         category = "Likely Disease Onset"
@@ -416,7 +471,11 @@ def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, symptoms
     else:
         category = "Typical"
 
-    return [{"Condition": "Atopic Dermatitis/Eczema", "Category": category}]
+    return [{
+        "Condition": "Atopic Dermatitis/Eczema", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Atopic Dermatitis/Eczema"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Chronic Obstruction of Pulmonary Disorder​
@@ -429,11 +488,12 @@ def evaluate_copd(labs, patient, genetics, family_history, symptoms=False):
     eosinophils = labs.get("eosinophils")
     neutrophils = labs.get("neutrophils")
 
-    crp_elevated_flag = is_elevated(crp, CRP_ELEVATED)
-    crp_at_risk_flag = is_elevated(crp, CRP_AT_RISK)
-    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
-    fibrinogen_flag = is_elevated(fibrinogen, FIBRINOGEN_RANGE[1])
-    neutrophil_flag = is_elevated(neutrophils, NEUTROPHILS_RANGE[1])
+    triggered = []
+    crp_elevated_flag = note(triggered, "crp", crp, is_elevated(crp, CRP_ELEVATED), f">={CRP_ELEVATED}")
+    crp_at_risk_flag = note(triggered, "crp", crp, is_elevated(crp, CRP_AT_RISK), f">={CRP_AT_RISK}")
+    eosinophil_flag = note(triggered, "eosinophils", eosinophils, is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL), f">={EOSINOPHILS_UPPER_NORMAL}")
+    fibrinogen_flag = note(triggered, "fibrinogen", fibrinogen, is_elevated(fibrinogen, FIBRINOGEN_RANGE[1]), f">={FIBRINOGEN_RANGE[1]}")
+    neutrophil_flag = note(triggered, "neutrophils", neutrophils, is_elevated(neutrophils, NEUTROPHILS_RANGE[1]), f">={NEUTROPHILS_RANGE[1]}")
 
     if (crp_elevated_flag or fibrinogen_flag) and (eosinophil_flag or neutrophil_flag) and symptoms and family_history:
         category = "Likely Disease Onset"
@@ -443,7 +503,11 @@ def evaluate_copd(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "COPD", "Category": category}]
+    return [{
+        "Condition": "COPD", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "COPD"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Eczema (merged with Atopic dermatitis (as done in prompt))
@@ -474,12 +538,13 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, symptoms=F
     free_t4 = labs.get("free_t4")
     tpoab = labs.get("tpoab")
 
-    tsh_suppressed = is_below(tsh, TSH_RANGE[0])
+    triggered = []
+    tsh_suppressed = note(triggered, "tsh", tsh, is_below(tsh, TSH_RANGE[0]), f"<{TSH_RANGE[0]}")
     hormone_flag = (
-        (free_t3 is not None and free_t3 > FREE_T3_RANGE[1])
-        or (free_t4 is not None and free_t4 > FREE_T4_RANGE[1])
+        note(triggered, "free_t3", free_t3, free_t3 is not None and free_t3 > FREE_T3_RANGE[1], f">{FREE_T3_RANGE[1]}")
+        or note(triggered, "free_t4", free_t4, free_t4 is not None and free_t4 > FREE_T4_RANGE[1], f">{FREE_T4_RANGE[1]}")
     )
-    tpoab_flag = is_elevated(tpoab, TPOAB_UPPER_NORMAL)
+    tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
     if (tsh_suppressed and hormone_flag and tpoab_flag):
         category = "Likely Disease Onset"
@@ -488,7 +553,11 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, symptoms=F
     else:
         category = "Typical"
 
-    return [{"Condition": "Hyperthyroidism", "Category": category}]
+    return [{
+        "Condition": "Hyperthyroidism", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Hyperthyroidism"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 # Hypothyroidism
 def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=False):
@@ -499,10 +568,11 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=Fa
     free_t4 = labs.get("free_t4")
     tpoab = labs.get("tpoab")
 
-    tsh_high = is_elevated(tsh, 10.0)
-    tsh_mild = tsh is not None and 4.1 <= tsh <= 10.0
-    free_t4_low = is_below(free_t4, FREE_T4_RANGE[0])
-    tpoab_flag = is_elevated(tpoab, TPOAB_UPPER_NORMAL)
+    triggered = []
+    tsh_high = note(triggered, "tsh", tsh, is_elevated(tsh, 10.0), f">={10.0}")
+    tsh_mild = note(triggered, "tsh", tsh, tsh is not None and 4.1 <= tsh <= 10.0, "[4.1-10.0]")
+    free_t4_low = note(triggered, "free_t4", free_t4, is_below(free_t4, FREE_T4_RANGE[0]), f"<{FREE_T4_RANGE[0]}")
+    tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
     if (tsh_high and free_t4_low and tpoab_flag):
         category = "Likely Disease Onset"
@@ -512,7 +582,11 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=Fa
     else:
         category = "Typical"
 
-    return [{"Condition": "Hypothyroidism", "Category": category}]
+    return [{
+        "Condition": "Hypothyroidism", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Hypothyroidism"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Inflammatory Bowel Disease
@@ -527,9 +601,10 @@ def evaluate_ibd(labs, patient, genetics, family_history, symptoms=False):
     hemoglobin = labs.get("hemoglobin")
     albumin = labs.get("albumin")
 
-    crp_flag = is_elevated(crp, CRP_ELEVATED)
-    anemia_flag = is_below(hemoglobin, hb_min)
-    albumin_flag = is_below(albumin, ALBUMIN_RANGE[0])
+    triggered = []
+    crp_flag = note(triggered, "crp", crp, is_elevated(crp, CRP_ELEVATED), f">={CRP_ELEVATED}")
+    anemia_flag = note(triggered, "hemoglobin", hemoglobin, is_below(hemoglobin, hb_min), f"<{hb_min}")
+    albumin_flag = note(triggered, "albumin", albumin, is_below(albumin, ALBUMIN_RANGE[0]), f"<{ALBUMIN_RANGE[0]}")
     # (crp_flag and anemia_flag and albumin_flag) added for early pattern w/o user context (labs only)
     if ((crp_flag or anemia_flag or albumin_flag) and symptoms and family_history) or (crp_flag and anemia_flag and albumin_flag):
         category = "Likely Disease Onset"
@@ -539,7 +614,11 @@ def evaluate_ibd(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Inflammatory Bowel Disease", "Category": category}]
+    return [{
+        "Condition": "Inflammatory Bowel Disease", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Inflammatory Bowel Disease"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Non alcoholic fatty liver disease
@@ -553,10 +632,15 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
     fib4 = labs.get("fib4")
     platelets = labs.get("platelets")
 
-    lft_flag = is_elevated(ast, AST_RANGE[1]) or is_elevated(alt, ALT_RANGE[1]) or is_elevated(ggt, GGT_RANGE[1])
-    fib4_elevated = is_elevated(fib4, FIB4_ELEVATED)
-    fib4_at_risk = fib4 is not None and FIB4_AT_RISK <= fib4 < FIB4_ELEVATED
-    platelets_low = is_below(platelets, PLATELETS_RANGE[0])
+    triggered = []
+    lft_flag = (
+        note(triggered, "ast", ast, is_elevated(ast, AST_RANGE[1]), f">={AST_RANGE[1]}")
+        or note(triggered, "alt", alt, is_elevated(alt, ALT_RANGE[1]), f">={ALT_RANGE[1]}")
+        or note(triggered, "ggt", ggt, is_elevated(ggt, GGT_RANGE[1]), f">={GGT_RANGE[1]}")
+    )
+    fib4_elevated = note(triggered, "fib4", fib4, is_elevated(fib4, FIB4_ELEVATED), f">={FIB4_ELEVATED}")
+    fib4_at_risk = note(triggered, "fib4", fib4, fib4 is not None and FIB4_AT_RISK <= fib4 < FIB4_ELEVATED, f"[{FIB4_AT_RISK}-{FIB4_ELEVATED})")
+    platelets_low = note(triggered, "platelets", platelets, is_below(platelets, PLATELETS_RANGE[0]), f"<{PLATELETS_RANGE[0]}")
     # (lft_flag and fib4_elevated and platelets_low) added for early pattern w/o user context (labs only)
     if (lft_flag and fib4_elevated and platelets_low):
         category = "Likely Disease Onset"
@@ -566,7 +650,11 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Non Alcoholic Fatty Liver Disease", "Category": category}]
+    return [{
+        "Condition": "Non Alcoholic Fatty Liver Disease", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "NAFLD"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Osteoarthritis
@@ -575,7 +663,8 @@ def evaluate_osteoarthritis(labs, patient, genetics, family_history, symptoms=Fa
         return [{"Condition": "Osteoarthritis", "Category": GENE_NOT_FOUND}]
 
     crp = labs.get("crp")
-    crp_flag = is_elevated(crp, CRP_AT_RISK)
+    triggered = []
+    crp_flag = note(triggered, "crp", crp, is_elevated(crp, CRP_AT_RISK), f">={CRP_AT_RISK}")
 
     if crp_flag and symptoms and family_history:
         category = "Likely Disease Onset"
@@ -585,7 +674,11 @@ def evaluate_osteoarthritis(labs, patient, genetics, family_history, symptoms=Fa
     else:
         category = "Typical"
 
-    return [{"Condition": "Osteoarthritis", "Category": category}]
+    return [{
+        "Condition": "Osteoarthritis", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Osteoarthritis"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Parkinson's Disease
@@ -603,14 +696,15 @@ def evaluate_parkinsons(labs, patient, genetics, family_history, symptoms=False)
     hba1c = labs.get("hba1c")
     crp = labs.get("crp")
 
+    triggered = []
     metabolic_flag = (
-        is_elevated(ldl_c, LDL_C_AT_RISK)
-        or is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
-        or is_below(hdl_c, hdl_min)
-        or is_elevated(fasting_glucose, FASTING_GLUCOSE_AT_RISK)
-        or is_elevated(hba1c, HBA1C_AT_RISK)
+        note(triggered, "ldl_c", ldl_c, is_elevated(ldl_c, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
+        or note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
+        or note(triggered, "hdl_c", hdl_c, is_below(hdl_c, hdl_min), f"<{hdl_min}")
+        or note(triggered, "fasting_glucose", fasting_glucose, is_elevated(fasting_glucose, FASTING_GLUCOSE_AT_RISK), f">={FASTING_GLUCOSE_AT_RISK}")
+        or note(triggered, "hba1c", hba1c, is_elevated(hba1c, HBA1C_AT_RISK), f">={HBA1C_AT_RISK}")
     )
-    crp_flag = is_elevated(crp, CRP_AT_RISK)
+    crp_flag = note(triggered, "crp", crp, is_elevated(crp, CRP_AT_RISK), f">={CRP_AT_RISK}")
 
     if metabolic_flag and crp_flag and symptoms and family_history:
         category = "Likely Disease Onset"
@@ -620,7 +714,11 @@ def evaluate_parkinsons(labs, patient, genetics, family_history, symptoms=False)
     else:
         category = "Typical"
 
-    return [{"Condition": "Parkinson's Disease", "Category": category}]
+    return [{
+        "Condition": "Parkinson's Disease", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Parkinson's Disease"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Psoriasis
@@ -636,9 +734,10 @@ def evaluate_psoriasis(labs, patient, genetics, family_history, symptoms=False):
     esr = labs.get("esr")
     nlr = labs.get("nlr")
 
-    crp_flag = is_elevated(crp, CRP_ELEVATED)
-    esr_flag = is_elevated(esr, esr_max)
-    nlr_flag = is_elevated(nlr, NLR_RANGE[1])
+    triggered = []
+    crp_flag = note(triggered, "crp", crp, is_elevated(crp, CRP_ELEVATED), f">={CRP_ELEVATED}")
+    esr_flag = note(triggered, "esr", esr, is_elevated(esr, esr_max), f">={esr_max}")
+    nlr_flag = note(triggered, "nlr", nlr, is_elevated(nlr, NLR_RANGE[1]), f">={NLR_RANGE[1]}")
 
     if crp_flag and esr_flag and nlr_flag and symptoms:
         category = "Likely Disease Onset"
@@ -648,7 +747,11 @@ def evaluate_psoriasis(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Psoriasis", "Category": category}]
+    return [{
+        "Condition": "Psoriasis", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Psoriasis"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 #  Rheumatoid Arthritis​
@@ -666,8 +769,15 @@ def evaluate_rheumatoid_arthritis(labs, patient, genetics, family_history, sympt
     hdl_c = labs.get("hdl_c")
     triglycerides = labs.get("triglycerides")
 
-    inflammatory_flag = is_elevated(crp, CRP_ELEVATED) or is_elevated(esr, esr_max)
-    lipid_flag = is_below(hdl_c, hdl_min) or is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
+    triggered = []
+    inflammatory_flag = (
+        note(triggered, "crp", crp, is_elevated(crp, CRP_ELEVATED), f">={CRP_ELEVATED}")
+        or note(triggered, "esr", esr, is_elevated(esr, esr_max), f">={esr_max}")
+    )
+    lipid_flag = (
+        note(triggered, "hdl_c", hdl_c, is_below(hdl_c, hdl_min), f"<{hdl_min}")
+        or note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
+    )
 
     if inflammatory_flag and lipid_flag and symptoms and family_history:
         category = "Likely Disease Onset"
@@ -677,7 +787,11 @@ def evaluate_rheumatoid_arthritis(labs, patient, genetics, family_history, sympt
     else:
         category = "Typical"
 
-    return [{"Condition": "Rheumatoid Arthritis", "Category": category}]
+    return [{
+        "Condition": "Rheumatoid Arthritis", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Rheumatoid Arthritis"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Rhinitis 
@@ -688,8 +802,9 @@ def evaluate_rhinitis(labs, patient, genetics, family_history, symptoms=False):
     eosinophils = labs.get("eosinophils")
     ige = labs.get("ige")
 
-    eosinophil_flag = is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL)
-    ige_flag = is_elevated(ige, IGE_UPPER_NORMAL)
+    triggered = []
+    eosinophil_flag = note(triggered, "eosinophils", eosinophils, is_elevated(eosinophils, EOSINOPHILS_UPPER_NORMAL), f">={EOSINOPHILS_UPPER_NORMAL}")
+    ige_flag = note(triggered, "ige", ige, is_elevated(ige, IGE_UPPER_NORMAL), f">={IGE_UPPER_NORMAL}")
 
     if eosinophil_flag and ige_flag and symptoms and family_history:
         category = "Likely Disease Onset"
@@ -699,7 +814,11 @@ def evaluate_rhinitis(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Rhinitis", "Category": category}]
+    return [{
+        "Condition": "Rhinitis", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Rhinitis"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Type 2 Diabetes
@@ -711,12 +830,16 @@ def evaluate_t2d(labs, patient, genetics, family_history, symptoms=False):
     fasting_insulin = labs.get("fasting_insulin")
     hba1c = labs.get("hba1c")
 
-    elevated_flag = is_elevated(fasting_glucose, FASTING_GLUCOSE_ELEVATED) or is_elevated(hba1c, HBA1C_ELEVATED)
-    prediabetic_flag = (
-        (fasting_glucose is not None and 100 <= fasting_glucose <= 125)
-        or (hba1c is not None and 5.7 <= hba1c <= 6.4)
+    triggered = []
+    elevated_flag = (
+        note(triggered, "fasting_glucose", fasting_glucose, is_elevated(fasting_glucose, FASTING_GLUCOSE_ELEVATED), f">={FASTING_GLUCOSE_ELEVATED}")
+        or note(triggered, "hba1c", hba1c, is_elevated(hba1c, HBA1C_ELEVATED), f">={HBA1C_ELEVATED}")
     )
-    insulin_resistance_flag = is_elevated(fasting_insulin, FASTING_INSULIN_RANGE[1])
+    prediabetic_flag = (
+        note(triggered, "fasting_glucose", fasting_glucose, fasting_glucose is not None and 100 <= fasting_glucose <= 125, "[100-125]")
+        or note(triggered, "hba1c", hba1c, hba1c is not None and 5.7 <= hba1c <= 6.4, "[5.7-6.4]")
+    )
+    insulin_resistance_flag = note(triggered, "fasting_insulin", fasting_insulin, is_elevated(fasting_insulin, FASTING_INSULIN_RANGE[1]), f">={FASTING_INSULIN_RANGE[1]}")
 
     if elevated_flag and symptoms:
         category = "Likely Disease Onset"
@@ -725,7 +848,11 @@ def evaluate_t2d(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Type 2 Diabetes", "Category": category}]
+    return [{
+        "Condition": "Type 2 Diabetes", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Type 2 Diabetes"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 # =============================================================================
 # (14)
@@ -740,9 +867,10 @@ def evaluate_mody(labs, patient, genetics, family_history, symptoms=False):
     fasting_glucose = labs.get("fasting_glucose")
     age = patient.get("age")
 
+    triggered = []
     hyperglycemia = (
-        is_elevated(hba1c, HBA1C_ELEVATED) or
-        is_elevated(fasting_glucose, FASTING_GLUCOSE_ELEVATED)
+        note(triggered, "hba1c", hba1c, is_elevated(hba1c, HBA1C_ELEVATED), f">={HBA1C_ELEVATED}") or
+        note(triggered, "fasting_glucose", fasting_glucose, is_elevated(fasting_glucose, FASTING_GLUCOSE_ELEVATED), f">={FASTING_GLUCOSE_ELEVATED}")
     )
 
     if (hyperglycemia and age is not None and age < 25) or (hyperglycemia and family_history):
@@ -752,7 +880,11 @@ def evaluate_mody(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Maturity-Onset Diabetes of the Young", "Category": category}]
+    return [{
+        "Condition": "Maturity-Onset Diabetes of the Young", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Maturity-Onset Diabetes of the Young"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Multiple Endocrine Neoplasia Type 4
@@ -763,8 +895,9 @@ def evaluate_men4(labs, patient, genetics, family_history, endocrine_conditions=
     calcium = labs.get("calcium")
     pth = labs.get("pth")
 
-    hypercalcemia = is_above(calcium, CALCIUM_UPPER_NORMAL)
-    elevated_pth = is_above(pth, PTH_UPPER_NORMAL)
+    triggered = []
+    hypercalcemia = note(triggered, "calcium", calcium, is_above(calcium, CALCIUM_UPPER_NORMAL), f">{CALCIUM_UPPER_NORMAL}")
+    elevated_pth = note(triggered, "pth", pth, is_above(pth, PTH_UPPER_NORMAL), f">{PTH_UPPER_NORMAL}")
     phpt_pattern = hypercalcemia and elevated_pth
 
     if phpt_pattern and (endocrine_conditions or family_history):
@@ -774,7 +907,11 @@ def evaluate_men4(labs, patient, genetics, family_history, endocrine_conditions=
     else:
         category = "Typical"
 
-    return [{"Condition": "Multiple Endocrine Neoplasia Type 4", "Category": category}]
+    return [{
+        "Condition": "Multiple Endocrine Neoplasia Type 4", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Multiple Endocrine Neoplasia Type 4"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Muscular Dystrophy
@@ -787,8 +924,9 @@ def evaluate_muscular_dystrophy(labs, patient, genetics, family_history, symptom
     ck_significant_multiple = CK_UPPER_NORMAL * 10
     ck_moderate_multiple = CK_UPPER_NORMAL * 5
 
-    marked_ck_elevation = is_elevated(ck, ck_significant_multiple)
-    moderate_ck_elevation = is_elevated(ck, ck_moderate_multiple)
+    triggered = []
+    marked_ck_elevation = note(triggered, "ck", ck, is_elevated(ck, ck_significant_multiple), f">={ck_significant_multiple}")
+    moderate_ck_elevation = note(triggered, "ck", ck, is_elevated(ck, ck_moderate_multiple), f">={ck_moderate_multiple}")
 
     if marked_ck_elevation and (symptoms or family_history):
         category = "Likely Disease Onset"
@@ -798,7 +936,11 @@ def evaluate_muscular_dystrophy(labs, patient, genetics, family_history, symptom
     else:
         category = "Typical"
 
-    return [{"Condition": "Muscular Dystrophy", "Category": category}]
+    return [{
+        "Condition": "Muscular Dystrophy", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Muscular Dystrophy"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Gilbert Syndrome
@@ -814,6 +956,7 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
     alp = labs.get("alp")
     ggt = labs.get("ggt")
 
+    triggered = []
     parameter = (
         total_bilirubin is not None and TOTAL_BILIRUBIN_RANGE[0] < total_bilirubin < TOTAL_BILIRUBIN_RANGE[1] and
         direct_bilirubin is not None and direct_bilirubin > DIRECT_BILIRUBIN_LOWER and
@@ -823,6 +966,17 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
         alp is not None and ALP_RANGE[0] < alp <= ALP_RANGE[1] and
         ggt is not None and GGT_LFT_RANGE[0] < ggt <= GGT_LFT_RANGE[1]
     )
+    # all 7 sub-checks are AND'd into a single pattern, so only record them once the
+    # whole pattern is confirmed true — otherwise a false prefix would leave misleading
+    # partial entries in `triggered` for a pattern that didn't actually fire
+    if parameter:
+        triggered.append(f"total_bilirubin={total_bilirubin} ({TOTAL_BILIRUBIN_RANGE[0]}-{TOTAL_BILIRUBIN_RANGE[1]})")
+        triggered.append(f"direct_bilirubin={direct_bilirubin} (>{DIRECT_BILIRUBIN_LOWER})")
+        triggered.append(f"indirect_bilirubin={indirect_bilirubin} (<{INDIRECT_BILIRUBIN_UPPER})")
+        triggered.append(f"alt={alt} (<={ALT_RANGE[1]})")
+        triggered.append(f"ast={ast} (<={AST_UPPER_STRICT})")
+        triggered.append(f"alp={alp} ({ALP_RANGE[0]}-{ALP_RANGE[1]}]")
+        triggered.append(f"ggt={ggt} ({GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}]")
 
     if (
         (parameter and family_history and symptoms and past_history) or
@@ -842,7 +996,11 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
     else:
         category = "Typical"
 
-    return [{"Condition": "Gilbert Syndrome", "Category": category}]
+    return [{
+        "Condition": "Gilbert Syndrome", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Gilbert Syndrome"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 # Hereditary Hemochromatosis
 def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_history, symptoms=False):
@@ -858,35 +1016,59 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
     mcv = labs.get("mcv")
     mch = labs.get("mch")
 
+    triggered = []
     abnormal_labs = (
         is_above(alt, ALT_RANGE[1]) and
         is_above(ast, AST_UPPER_STRICT) and
         is_above(hemoglobin, HEMOGLOBIN_UPPER_HEMOCHROMATOSIS) and
         is_above(mcv, MCV_UPPER_HEMOCHROMATOSIS) and
-        is_above(mch, MCH_UPPER_HEMOCHROMATOSIS)    
+        is_above(mch, MCH_UPPER_HEMOCHROMATOSIS)
     )
+    # all 5 sub-checks are AND'd into a single pattern, so only record them once the
+    # whole pattern is confirmed true — otherwise a false prefix would leave misleading
+    # partial entries in `triggered` for a pattern that didn't actually fire
+    if abnormal_labs:
+        triggered.append(f"alt={alt} (>{ALT_RANGE[1]})")
+        triggered.append(f"ast={ast} (>{AST_UPPER_STRICT})")
+        triggered.append(f"hemoglobin={hemoglobin} (>{HEMOGLOBIN_UPPER_HEMOCHROMATOSIS})")
+        triggered.append(f"mcv={mcv} (>{MCV_UPPER_HEMOCHROMATOSIS})")
+        triggered.append(f"mch={mch} (>{MCH_UPPER_HEMOCHROMATOSIS})")
+
+    gene_trigger = get_gene_trigger(genetics, "Hereditary Hemochromatosis")
 
     if iron_profile_done is True:
-        tsat_low = is_below(transferrin_saturation, TRANSFERRIN_SATURATION_ELEVATED)
-        ferritin_not_elevated = ferritin is not None and ferritin <= FERRITIN_ELEVATED
+        tsat_low = note(triggered, "transferrin_saturation", transferrin_saturation, is_below(transferrin_saturation, TRANSFERRIN_SATURATION_ELEVATED), f"<{TRANSFERRIN_SATURATION_ELEVATED}")
+        ferritin_not_elevated = note(triggered, "ferritin", ferritin, ferritin is not None and ferritin <= FERRITIN_ELEVATED, f"<={FERRITIN_ELEVATED}")
 
         if tsat_low and ferritin_not_elevated:
-            return [{"Condition": "Hereditary Hemochromatosis", "Category": "Unlikely"}]
+            return [{
+                "Condition": "Hereditary Hemochromatosis", "Category": "Unlikely",
+                "Triggering Genetics": gene_trigger,
+                "Triggering Parameters": ", ".join(triggered),
+            }]
 
-        tsat_elevated = is_elevated(transferrin_saturation, TRANSFERRIN_SATURATION_ELEVATED)
-        ferritin_elevated = is_above(ferritin, FERRITIN_ELEVATED)
+        tsat_elevated = note(triggered, "transferrin_saturation", transferrin_saturation, is_elevated(transferrin_saturation, TRANSFERRIN_SATURATION_ELEVATED), f">={TRANSFERRIN_SATURATION_ELEVATED}")
+        ferritin_elevated = note(triggered, "ferritin", ferritin, is_above(ferritin, FERRITIN_ELEVATED), f">{FERRITIN_ELEVATED}")
 
         if tsat_elevated and ferritin_elevated:
             score = sum([family_history, symptoms, past_history, abnormal_labs])
             if score >= 3:
                 category = "Likely Disease Onset"
             elif score >= 1:
-                category = "Early Pattern" #the score=1 covers early pattern w/o user context (abnormal labs only) 
+                category = "Early Pattern" #the score=1 covers early pattern w/o user context (abnormal labs only)
             else:
                 category = "Typical"
-            return [{"Condition": "Hereditary Hemochromatosis", "Category": category}]
+            return [{
+                "Condition": "Hereditary Hemochromatosis", "Category": category,
+                "Triggering Genetics": gene_trigger,
+                "Triggering Parameters": ", ".join(triggered),
+            }]
 
-        return [{"Condition": "Hereditary Hemochromatosis", "Category": "Typical"}]
+        return [{
+            "Condition": "Hereditary Hemochromatosis", "Category": "Typical",
+            "Triggering Genetics": gene_trigger,
+            "Triggering Parameters": ", ".join(triggered),
+        }]
 
     if iron_profile_done is False:
         score = sum([family_history, symptoms, past_history, abnormal_labs])
@@ -896,10 +1078,16 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
             category = "Early Pattern" #the score=1 covers early pattern w/o user context (abnormal labs only)
         else:
             category = "Typical"
-        return [{"Condition": "Hereditary Hemochromatosis", "Category": category}]
+        return [{
+            "Condition": "Hereditary Hemochromatosis", "Category": category,
+            "Triggering Genetics": gene_trigger,
+            "Triggering Parameters": ", ".join(triggered),
+        }]
     return [{
         "Condition": "Hereditary Hemochromatosis",
         "Category": "Relevant lab parameters not found",
+        "Triggering Genetics": gene_trigger,
+        "Triggering Parameters": ", ".join(triggered),
     }]
 
 
@@ -917,16 +1105,29 @@ def evaluate_celiac_disease(labs, patient, genetics, family_history, past_histor
     mch = labs.get("mch")
     mchc = labs.get("mchc")
 
+    triggered = []
     parameter = (
         is_below(vitamin_d, VITAMIN_D_DEFICIENT) and
-        is_above(alt, ALT_RANGE[1]) and            
-        is_above(ast, AST_UPPER_STRICT) and        
-        is_above(ggt, GGT_LFT_RANGE[1]) and        
-        is_above(alp, ALP_RANGE[1]) and             
+        is_above(alt, ALT_RANGE[1]) and
+        is_above(ast, AST_UPPER_STRICT) and
+        is_above(ggt, GGT_LFT_RANGE[1]) and
+        is_above(alp, ALP_RANGE[1]) and
         is_below(mcv, MCV_LOWER_CELIAC) and
         is_below(mch, MCH_LOWER_CELIAC) and
         is_below(mchc, MCHC_LOWER_CELIAC)
     )
+    # all 8 sub-checks are AND'd into a single pattern, so only record them once the
+    # whole pattern is confirmed true — otherwise a false prefix would leave misleading
+    # partial entries in `triggered` for a pattern that didn't actually fire
+    if parameter:
+        triggered.append(f"vitamin_d={vitamin_d} (<{VITAMIN_D_DEFICIENT})")
+        triggered.append(f"alt={alt} (>{ALT_RANGE[1]})")
+        triggered.append(f"ast={ast} (>{AST_UPPER_STRICT})")
+        triggered.append(f"ggt={ggt} (>{GGT_LFT_RANGE[1]})")
+        triggered.append(f"alp={alp} (>{ALP_RANGE[1]})")
+        triggered.append(f"mcv={mcv} (<{MCV_LOWER_CELIAC})")
+        triggered.append(f"mch={mch} (<{MCH_LOWER_CELIAC})")
+        triggered.append(f"mchc={mchc} (<{MCHC_LOWER_CELIAC})")
 
     if (
         (parameter and family_history and symptoms and past_history) or
@@ -946,7 +1147,11 @@ def evaluate_celiac_disease(labs, patient, genetics, family_history, past_histor
     else:
         category = "Typical"
 
-    return [{"Condition": "Celiac Disease", "Category": category}]
+    return [{
+        "Condition": "Celiac Disease", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Celiac Disease"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Familial Hypercholesterolemia
@@ -958,8 +1163,15 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
     non_hdl = labs.get("non_hdl_c")
     age = patient.get("age")
 
-    elevated_160 = is_above(ldl, LDL_C_ELEVATED) or is_above(non_hdl, NON_HDL_C_ELEVATED)
-    elevated_190 = is_above(ldl, LDL_C_SEVERE) or is_above(non_hdl, NON_HDL_C_SEVERE)
+    triggered = []
+    elevated_160 = (
+        note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_ELEVATED), f">{LDL_C_ELEVATED}")
+        or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_ELEVATED), f">{NON_HDL_C_ELEVATED}")
+    )
+    elevated_190 = (
+        note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_SEVERE), f">{LDL_C_SEVERE}")
+        or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}")
+    )
 
     if elevated_190 or (elevated_160 and age is not None and age < 40) or (elevated_160 and family_history):
         category = "Likely Disease Onset"
@@ -968,7 +1180,11 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Familial Hypercholesterolemia", "Category": category}]
+    return [{
+        "Condition": "Familial Hypercholesterolemia", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Familial Hypercholesterolemia"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Cardiomyopathy
@@ -991,15 +1207,20 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
         f in HIGH_SPECIFICITY_FINDINGS for f in real_findings
     )
 
+    triggered = []
     hb_normal = sex_based_threshold(sex, 13, 11.5)
-    hb_severely_low = hb_normal is not None and is_below(hemoglobin, hb_normal - 2) #because python evaluates arithmetic part before helper function's "not None" check.
-    eos_high = is_elevated(eosinophils_absolute, 1500)
+    hb_severely_low = hb_normal is not None and note(triggered, "hemoglobin", hemoglobin, is_below(hemoglobin, hb_normal - 2), f"<{hb_normal - 2}") #because python evaluates arithmetic part before helper function's "not None" check.
+    eos_high = note(triggered, "eosinophils_absolute", eosinophils_absolute, is_elevated(eosinophils_absolute, 1500), f">={1500}")
     labs_severe = hb_severely_low or eos_high
+
+    gene_trigger = get_gene_trigger(genetics, "Cardiomyopathy")
 
     if hemoglobin is None and eosinophils_absolute is None and not imaging_performed:
         return [{
             "Condition": "Cardiomyopathy",
             "Category": "Relevant lab/imaging parameters not found",
+            "Triggering Genetics": gene_trigger,
+            "Triggering Parameters": ", ".join(triggered),
         }]
 
     # --- Case 1: imaging performed and abnormal -> imaging drives the call ---
@@ -1024,7 +1245,11 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
         else:
             category = "Typical"
 
-    return [{"Condition": "Cardiomyopathy", "Category": category}]
+    return [{
+        "Condition": "Cardiomyopathy", "Category": category,
+        "Triggering Genetics": gene_trigger,
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Coronary Artery Disease
@@ -1042,14 +1267,21 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
 
     hdl_min = sex_based_threshold(sex, HDL_C_MALE_MIN, HDL_C_FEMALE_MIN)
 
-    ldl_moderate = is_elevated(ldl, LDL_C_AT_RISK) or is_elevated(non_hdl, NON_HDL_C_ELEVATED)
-    low_hdl = is_below(hdl, hdl_min)
-    tg_moderate = is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
-    prediabetes = is_elevated(hba1c, HBA1C_AT_RISK)
+    triggered = []
+    ldl_moderate = (
+        note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
+        or note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_ELEVATED), f">={NON_HDL_C_ELEVATED}")
+    )
+    low_hdl = note(triggered, "hdl_c", hdl, is_below(hdl, hdl_min), f"<{hdl_min}")
+    tg_moderate = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
+    prediabetes = note(triggered, "hba1c", hba1c, is_elevated(hba1c, HBA1C_AT_RISK), f">={HBA1C_AT_RISK}")
     any_moderate = ldl_moderate or low_hdl or tg_moderate or prediabetes
 
-    ldl_high = is_elevated(ldl, LDL_C_ELEVATED) or is_elevated(non_hdl, NON_HDL_C_SEVERE)
-    diabetes = is_elevated(hba1c, HBA1C_ELEVATED)
+    ldl_high = (
+        note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}")
+        or note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_SEVERE), f">={NON_HDL_C_SEVERE}")
+    )
+    diabetes = note(triggered, "hba1c", hba1c, is_elevated(hba1c, HBA1C_ELEVATED), f">={HBA1C_ELEVATED}")
     combined_atherogenic = ldl_moderate and low_hdl and tg_moderate
 
     if (
@@ -1066,7 +1298,11 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Coronary Artery Disease", "Category": category}]
+    return [{
+        "Condition": "Coronary Artery Disease", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Coronary Artery Disease"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 # Familial Hypertriglyceridemia
 def evaluate_hypertriglyceridemia(labs, patient, genetics, family_history, symptoms=False):
@@ -1079,16 +1315,17 @@ def evaluate_hypertriglyceridemia(labs, patient, genetics, family_history, sympt
     sex = patient.get("sex")
     age = patient.get("age")
 
+    triggered = []
     hdl_normal = sex_based_threshold(sex, HDL_C_MALE_MIN, HDL_C_FEMALE_MIN)
-    hdl_low = is_below(hdl, hdl_normal)
-    hdl_severely_low = is_below(hdl, sex_based_threshold(sex, HDL_C_MALE_SEVERE, HDL_C_FEMALE_SEVERE))
+    hdl_low = note(triggered, "hdl_c", hdl, is_below(hdl, hdl_normal), f"<{hdl_normal}")
+    hdl_severely_low = note(triggered, "hdl_c", hdl, is_below(hdl, sex_based_threshold(sex, HDL_C_MALE_SEVERE, HDL_C_FEMALE_SEVERE)), f"<{sex_based_threshold(sex, HDL_C_MALE_SEVERE, HDL_C_FEMALE_SEVERE)}")
 
-    tg_borderline = is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
-    tg_moderate = is_elevated(triglycerides, TRIGLYCERIDES_ELEVATED)
-    tg_severe = is_elevated(triglycerides, TRIGLYCERIDES_SEVERE)
-    tg_very_severe = is_elevated(triglycerides, TRIGLYCERIDES_VERY_SEVERE)
+    tg_borderline = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
+    tg_moderate = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_ELEVATED), f">={TRIGLYCERIDES_ELEVATED}")
+    tg_severe = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_SEVERE), f">={TRIGLYCERIDES_SEVERE}")
+    tg_very_severe = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_VERY_SEVERE), f">={TRIGLYCERIDES_VERY_SEVERE}")
 
-    vldl_elevated = is_elevated(vldl, VLDL_UPPER_NORMAL)
+    vldl_elevated = note(triggered, "vldl", vldl, is_elevated(vldl, VLDL_UPPER_NORMAL), f">={VLDL_UPPER_NORMAL}")
     any_moderate_abnormal = tg_moderate or hdl_low or vldl_elevated
 
     if (
@@ -1108,7 +1345,11 @@ def evaluate_hypertriglyceridemia(labs, patient, genetics, family_history, sympt
     else:
         category = "Typical"
 
-    return [{"Condition": "Familial Hypertriglyceridemia", "Category": category}]
+    return [{
+        "Condition": "Familial Hypertriglyceridemia", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Familial Hypertriglyceridemia"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 # HDL Deficiency
 def evaluate_hdl_deficiency(labs, patient, genetics, family_history, symptoms=False):
@@ -1121,12 +1362,13 @@ def evaluate_hdl_deficiency(labs, patient, genetics, family_history, symptoms=Fa
     sex = patient.get("sex")
     age = patient.get("age")
 
+    triggered = []
     hdl_normal = sex_based_threshold(sex, HDL_C_MALE_MIN, HDL_C_FEMALE_MIN)
-    hdl_low = is_below(hdl, hdl_normal)
-    hdl_severe = is_below(hdl, sex_based_threshold(sex, 25, 30))
+    hdl_low = note(triggered, "hdl_c", hdl, is_below(hdl, hdl_normal), f"<{hdl_normal}")
+    hdl_severe = note(triggered, "hdl_c", hdl, is_below(hdl, sex_based_threshold(sex, 25, 30)), f"<{sex_based_threshold(sex, 25, 30)}")
 
-    tg_elevated = is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK)
-    ldl_elevated = is_elevated(ldl, LDL_C_ELEVATED)
+    tg_elevated = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
+    ldl_elevated = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}")
 
     isolated_significant = hdl_severe and not tg_elevated and not ldl_elevated
     isolated_moderate = hdl_low and not tg_elevated and not ldl_elevated
@@ -1142,7 +1384,11 @@ def evaluate_hdl_deficiency(labs, patient, genetics, family_history, symptoms=Fa
     else:
         category = "Typical"
 
-    return [{"Condition": "HDL Deficiency", "Category": category}]
+    return [{
+        "Condition": "HDL Deficiency", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "HDL Deficiency"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Elevated Apolipoprotein B
@@ -1153,8 +1399,9 @@ def evaluate_apob(labs, patient, genetics, family_history, symptoms=False):
     apob = labs.get("apob")
     age = patient.get("age")
 
-    elevated_100 = is_elevated(apob, 100)
-    elevated_130 = is_elevated(apob, 130)
+    triggered = []
+    elevated_100 = note(triggered, "apob", apob, is_elevated(apob, 100), f">={100}")
+    elevated_130 = note(triggered, "apob", apob, is_elevated(apob, 130), f">={130}")
 
     if elevated_130 or (elevated_100 and age is not None and age < 40) or (elevated_100 and family_history):
         category = "Likely Disease Onset"
@@ -1163,7 +1410,11 @@ def evaluate_apob(labs, patient, genetics, family_history, symptoms=False):
     else:
         category = "Typical"
 
-    return [{"Condition": "Elevated Apolipoprotein B", "Category": category}]
+    return [{
+        "Condition": "Elevated Apolipoprotein B", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Elevated Apolipoprotein B"),
+        "Triggering Parameters": ", ".join(triggered),
+    }]
 
 
 # Li-Fraumeni Syndrome
@@ -1208,7 +1459,11 @@ def evaluate_li_fraumeni_syndrome(labs, patient, genetics, family_history, sympt
     else:
         category = "Typical"
 
-    return [{"Condition": "Li-Fraumeni Syndrome", "Category": category}]
+    return [{
+        "Condition": "Li-Fraumeni Syndrome", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "Li-Fraumeni Syndrome"),
+        "Triggering Parameters": "",
+    }]
 
 
 # PTEN Hamartoma Tumor Syndrome
@@ -1258,7 +1513,11 @@ def evaluate_phts(labs, patient, genetics, family_history, symptoms=False, condi
     else:
         category = "Typical"
 
-    return [{"Condition": "PTEN Hamartoma Tumor Syndrome", "Category": category}]
+    return [{
+        "Condition": "PTEN Hamartoma Tumor Syndrome", "Category": category,
+        "Triggering Genetics": get_gene_trigger(genetics, "PTEN Hamartoma Tumor Syndrome"),
+        "Triggering Parameters": "",
+    }]
 
 
 # calling:
@@ -1390,7 +1649,7 @@ active_findings = [
 ]
 
 with open(args.output_csv, "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["Condition", "Category"])
+    writer = csv.DictWriter(f, fieldnames=["Condition", "Category", "Triggering Genetics", "Triggering Parameters"])
     writer.writeheader()
     writer.writerows(active_findings)
 
