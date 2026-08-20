@@ -181,6 +181,7 @@ def esr_upper_normal(sex, age):
 
 # --- CBC ---
 EOSINOPHILS_UPPER_NORMAL = 0.4        # x10^9/L
+EOSINOPHILS_ELEVATED = 0.5            # x10^9/L
 NEUTROPHILS_RANGE = (1.8, 7.5)        # x10^9/L
 PLATELETS_RANGE = (150, 400)          # x10^9/L
 NLR_RANGE = (0.8, 3.5)
@@ -889,9 +890,14 @@ def evaluate_mody(labs, patient, genetics, family_history, symptoms=False):
         note(triggered, "fasting_glucose", fasting_glucose, is_elevated(fasting_glucose, FASTING_GLUCOSE_ELEVATED), f">={FASTING_GLUCOSE_ELEVATED}")
     )
 
+    hyperglycemia_early = (
+        note(triggered, "hba1c", hba1c, is_elevated(hba1c, HBA1C_AT_RISK), f">={HBA1C_AT_RISK}") or
+        note(triggered, "fasting_glucose", fasting_glucose, is_elevated(fasting_glucose, FASTING_GLUCOSE_AT_RISK), f">={FASTING_GLUCOSE_AT_RISK}")
+    )
+
     if (hyperglycemia and age is not None and age < 25) or (hyperglycemia and family_history):
         category = "Likely Disease Onset"
-    elif hyperglycemia or family_history:
+    elif hyperglycemia_early or family_history:
         category = "Early Pattern"
     else:
         category = "Typical"
@@ -1184,19 +1190,23 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
     age = patient.get("age")
 
     triggered = []
+    elevated_130 = is_above(ldl, LDL_C_AT_RISK) or is_above(non_hdl, NON_HDL_C_NORMAL)
     elevated_160 = is_above(ldl, LDL_C_ELEVATED) or is_above(non_hdl, NON_HDL_C_ELEVATED)
-    elevated_190 = is_above(ldl, LDL_C_SEVERE) or is_above(non_hdl, NON_HDL_C_SEVERE)
+    # elevated_190 = is_above(ldl, LDL_C_SEVERE) or is_above(non_hdl, NON_HDL_C_SEVERE)
 
-    if elevated_190:
-        note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_SEVERE), f">{LDL_C_SEVERE}") \
-            or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}")
-    elif elevated_160:
+    # if elevated_190:
+    #     note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_SEVERE), f">{LDL_C_SEVERE}") \
+    #         or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}")
+    if elevated_160:
         note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_ELEVATED), f">{LDL_C_ELEVATED}") \
             or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_ELEVATED), f">{NON_HDL_C_ELEVATED}")
+    elif elevated_130:
+        note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_AT_RISK), f">{LDL_C_AT_RISK}") \
+            or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_NORMAL), f">{NON_HDL_C_NORMAL}")
 
-    if elevated_190 or (elevated_160 and age is not None and age < 40) or (elevated_160 and family_history):
+    if elevated_160 or (elevated_130 and age is not None and age < 40) or (elevated_130 and family_history):
         category = "Likely Disease Onset"
-    elif elevated_160 or family_history:
+    elif elevated_130 or family_history:
         category = "Early Pattern"
     else:
         category = "Typical"
@@ -1214,7 +1224,7 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
         return [{"Condition": "Cardiomyopathy", "Category": GENE_NOT_FOUND}]
 
     hemoglobin = labs.get("hemoglobin")
-    eosinophils_absolute = labs.get("eosinophils_absolute")
+    eosinophils = labs.get("eosinophils")
     sex = patient.get("sex")
 
     HIGH_SPECIFICITY_FINDINGS = [] #to be defined as a subset of imaging findings
@@ -1231,12 +1241,12 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
     triggered = []
     hb_normal = sex_based_threshold(sex, 13, 11.5)
     hb_severely_low = hb_normal is not None and note(triggered, "hemoglobin", hemoglobin, is_below(hemoglobin, hb_normal - 2), f"<{hb_normal - 2}") #because python evaluates arithmetic part before helper function's "not None" check.
-    eos_high = note(triggered, "eosinophils_absolute", eosinophils_absolute, is_elevated(eosinophils_absolute, 1500), f">={1500}")
+    eos_high = note(triggered, "eosinophils", eosinophils, is_above(eosinophils, EOSINOPHILS_ELEVATED), f">={EOSINOPHILS_ELEVATED}")
     labs_severe = hb_severely_low or eos_high
 
     gene_trigger = get_gene_trigger(genetics, "Cardiomyopathy")
 
-    if hemoglobin is None and eosinophils_absolute is None and not imaging_performed:
+    if hemoglobin is None and eosinophils is None and not imaging_performed:
         return [{
             "Condition": "Cardiomyopathy",
             "Category": "Relevant lab/imaging parameters not found",
@@ -1376,7 +1386,6 @@ def evaluate_hypertriglyceridemia(labs, patient, genetics, family_history, sympt
     ):
         category = "Likely Disease Onset"
     elif (
-        tg_severe or
         any_moderate_abnormal or
         (tg_borderline and hdl_low) or
         family_history
@@ -1413,7 +1422,7 @@ def evaluate_hdl_deficiency(labs, patient, genetics, family_history, symptoms=Fa
         note(triggered, "hdl_c", hdl, True, f"<{hdl_normal}")
 
     tg_elevated = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
-    ldl_elevated = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}")
+    ldl_elevated = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
 
     isolated_significant = hdl_severe and not tg_elevated and not ldl_elevated
     isolated_moderate = hdl_low and not tg_elevated and not ldl_elevated
