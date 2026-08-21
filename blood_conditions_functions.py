@@ -1227,7 +1227,7 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
     eosinophils = labs.get("eosinophils")
     sex = patient.get("sex")
 
-    HIGH_SPECIFICITY_FINDINGS = [] #to be defined as a subset of imaging findings
+    HIGH_SPECIFICITY_FINDINGS = [] # a subset of imaging findings
     
     imaging_findings = imaging_findings or []
     real_findings = [f for f in imaging_findings if f != "Normal"]
@@ -1483,15 +1483,8 @@ def evaluate_li_fraumeni_syndrome(labs, patient, genetics, family_history, sympt
     age = patient.get("age")
     conditions = conditions or []
 
-    pathognomonic_tumors = [
-        "Adrenocortical carcinoma", "Choroid plexus carcinoma",
-        "Embryonal rhabdomyosarcoma, anaplastic subtype"
-    ]
-    lfs_spectrum_tumors = [
-        "Sarcoma", "Osteosarcoma", "Breast cancer", "Brain tumor",
-        "Adrenocortical carcinoma", "Leukemia", "Choroid plexus carcinoma",
-        "Embryonal rhabdomyosarcoma, anaplastic subtype"
-    ]
+    pathognomonic_tumors = [] #subset of conditions
+    lfs_spectrum_tumors = [] #subset of conditions
 
     has_pathognomonic_tumor = any(t in conditions for t in pathognomonic_tumors)
     proband_lfs_tumors = [t for t in lfs_spectrum_tumors if t in conditions]
@@ -1530,34 +1523,19 @@ def evaluate_phts(labs, patient, genetics, family_history, symptoms=False, condi
         return [{"Condition": "PTEN Hamartoma Tumor Syndrome", "Category": GENE_NOT_FOUND}]
 
     conditions = conditions or []
+    major_criteria = []   # subset of conditions
+    minor_criteria = []   # subset of conditions
+    macrocephaly_plus_criteria = []  # subset of conditions
 
-    major_count = sum([
-        "Macrocephaly" in conditions,
-        "Multiple trichilemmomas" in conditions,
-        "Multiple oral papillomas" in conditions,
-        "Multiple gastrointestinal hamartomas" in conditions,
-    ])
-    minor_count = sum([
-        "Autism spectrum disorder" in conditions,
-        "Developmental delay" in conditions,
-        "Vascular anomaly" in conditions,
-        "Gastrointestinal polyps" in conditions,
-        "Intellectual disability" in conditions,
-        "Thyroid nodule" in conditions,
-        "Lipoma" in conditions,
-    ])
+    major_count = sum(c in conditions for c in major_criteria)
+    minor_count = sum(c in conditions for c in minor_criteria)
 
     macrocephaly = "Macrocephaly" in conditions
     gi_hamartoma = "Multiple gastrointestinal hamartomas" in conditions
 
     macrocephaly_plus = (
         macrocephaly and
-        any([
-            "Autism spectrum disorder" in conditions,
-            "Developmental delay" in conditions,
-            "Vascular anomaly" in conditions,
-            "Gastrointestinal polyps" in conditions,
-        ])
+        any(c in conditions for c in macrocephaly_plus_criteria)
     )
 
     if (
@@ -1652,19 +1630,19 @@ results = [
     ),
     evaluate_muscular_dystrophy(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False, symptoms=False,
     ),
     evaluate_gilbert_syndrome(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False, past_history=False,
+        family_history=False, past_history=False, symptoms=False,
     ),
     evaluate_hemochromatosis(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False, past_history=False,
+        family_history=False, past_history=False, symptoms=False,
     ),
     evaluate_celiac_disease(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False, past_history=False,
+        family_history=False, past_history=False, symptoms=False,
     ),
     evaluate_fh(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
@@ -1672,11 +1650,11 @@ results = [
     ),
     evaluate_cardiomyopathy(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False, imaging_performed=False, imaging_findings=None,
+        family_history=False, symptoms=False, imaging_performed=False, imaging_findings=None,
     ),
     evaluate_cad(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False, symptoms=False,
     ),
     evaluate_hypertriglyceridemia(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],

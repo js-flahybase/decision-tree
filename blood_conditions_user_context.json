@@ -1,0 +1,304 @@
+{
+  "Alzheimer's Disease": {
+    "family_history": null
+  },
+  "Asthma": {
+    "family_history": null
+  },
+  "Atopic Dermatitis": {
+    "family_history": null
+  },
+  "COPD": {
+    "family_history": null
+  },
+  "Hyperthyroidism": {
+    "family_history": null
+  },
+  "Hypothyroidism": {
+    "family_history": null
+  },
+  "IBD": {
+    "family_history": null
+  },
+  "NAFLD": {
+    "family_history": null
+  },
+  "Osteoarthritis": {
+    "family_history": null
+  },
+  "Parkinson's Disease": {
+    "family_history": null
+  },
+  "Psoriasis": {
+    "family_history": null
+  },
+  "Rheumatoid Arthritis": {
+    "family_history": null
+  },
+  "Rhinitis": {
+    "family_history": null
+  },
+  "Type 2 Diabetes": {
+    "family_history": null
+  },
+  "MODY": {
+    "family_history": [
+        "Maturity-onset diabetes of the young",
+        "Diabetes mellitus",
+        "Early-onset diabetes",
+        "Juvenile diabetes"
+    ]
+  },
+  "MEN4": {
+    "family_history": [
+        "Multiple endocrine neoplasia type 4",
+        "MEN4",
+        "CDKN1B mutation",
+        "Multiple endocrine neoplasia type 1",
+        "MEN1"
+    ],
+    "endocrine_conditions": [
+        "Pituitary adenoma",
+        "Acromegaly",
+        "Cushing disease",
+        "Pancreatic neuroendocrine tumor",
+        "Duodenal neuroendocrine tumor",
+        "Zollinger-Ellison syndrome",
+        "Carcinoid tumor",
+        "Adrenal adenoma"
+    ]
+  },
+  "Muscular Dystrophy": {
+    "symptoms": [
+        "Progressive proximal muscle weakness",
+        "Delayed motor milestones",
+        "Frequent falls",
+        "Difficulty climbing stairs",
+        "Gowers sign",
+        "Calf hypertrophy",
+        "Muscle weakness"
+    ],
+    "family_history": [
+        "Muscular dystrophy",
+        "Duchenne muscular dystrophy",
+        "Becker muscular dystrophy",
+        "Limb-girdle muscular dystrophy",
+        "Emery-Dreifuss muscular dystrophy"
+    ]
+  },
+  "Gilbert Syndrome": {
+    "symptoms": [
+        "Fatigue",
+        "Dizziness",
+        "Abdominal pain",
+        "Yellowing of skin",
+        "Yellowing of eyes",
+        "Nausea",
+        "Diarrhea",
+        "Loss of appetite"
+    ],
+    "family_history": [
+        "Gilbert syndrome",
+        "Jaundice"
+    ],
+    "past_history": [
+        "Jaundice",
+        "Hemolytic anemia"
+    ]
+  },
+  "Hemochromatosis": {
+    "symptoms": [
+        "Fatigue",
+        "Joint discomfort",
+        "Abdominal pain",
+        "Gray or bronze skin color",
+        "Loss of sex drive",
+        "Early menopause",
+        "Abnormal periods"
+    ],
+    "family_history": [
+        "Hereditary hemochromatosis",
+        "Cirrhosis",
+        "Arthritis",
+        "Iron overload"
+    ],
+    "past_history": [
+        "Arthritis",
+        "Cirrhosis",
+        "Hepatomegaly",
+        "Iron overload",
+        "Skin hyperpigmentation",
+        "Heart-related disease",
+        "Diabetes",
+        "Osteoarthritis",
+        "Osteoporosis",
+        "Hypothyroidism"
+    ]
+  },
+  "Celiac Disease": {
+    "symptoms": [
+        "Fatigue",
+        "Abdominal discomfort",
+        "Diarrhea",
+        "Bloating",
+        "Constipation",
+        "Early menopause",
+        "Abnormal periods",
+        "Weight loss"
+    ],
+    "family_history": [
+        "Celiac disease",
+        "Dermatitis herpetiformis",
+        "Autoimmune thyroid disease",
+        "Abdominal distension"
+    ],
+    "past_history": [
+        "Anemia",
+        "Osteoporosis",
+        "Autoimmune thyroid disease",
+        "Dermatitis herpetiformis"
+    ]
+  },
+  "Familial Hypercholesterolemia": {
+    "family_history": [
+        "Familial hypercholesterolemia",
+        "Hypercholesterolemia",
+        "Premature heart disease",
+        "Early heart attack",
+        "Sudden cardiac death"
+    ]
+  },
+  "Cardiomyopathy": {
+    "symptoms": [
+        "Shortness of breath",
+        "Chest pain",
+        "Dizziness",
+        "Swelling of legs, feet, stomach, and neck veins"
+    ],
+    "family_history": [
+        "Cardiomyopathy",
+        "Heart failure",
+        "Sudden cardiac death"
+    ],
+    "imaging_findings": [
+        "Left or biventricular dilation with spherical remodeling",
+        "Thinned myocardial walls with reduced wall motion",
+        "Reduced ejection fraction with secondary mitral regurgitation",
+        "Unexplained LV wall thickening >=15mm (asymmetric septal)",
+        "Systolic anterior motion of mitral valve / outflow obstruction",
+        "Patchy mid-wall late gadolinium enhancement (LGE)",
+        "Marked biatrial enlargement",
+        "Normal wall thickness or pseudohypertrophy with restrictive filling",
+        "Diffuse subendocardial or global LGE (e.g. amyloid pattern)",
+        "Two-layer myocardium: thin compacted, thick non-compacted",
+        "Deep intertrabecular recesses / prominent trabeculations",
+        "RV dilation or regional RV wall motion abnormality",
+        "RV aneurysm (inferior, apical, or infundibular)",
+        "Fibrofatty replacement of RV myocardium on MRI",
+        "Reduced RV ejection fraction",
+        "Normal"
+    ],
+    "high_specificity_findings": [
+        "Unexplained LV wall thickening >=15mm (asymmetric septal)",
+        "Two-layer myocardium: thin compacted, thick non-compacted",
+        "Diffuse subendocardial or global LGE (e.g. amyloid pattern)",
+        "RV aneurysm (inferior, apical, or infundibular)",
+        "Fibrofatty replacement of RV myocardium on MRI"
+    ]
+  },
+  "Coronary Artery Disease": {
+    "symptoms": [
+        "Shortness of breath",
+        "Chest pain",
+        "Dizziness",
+        "Fatigue"
+    ],
+    "family_history": [
+        "Coronary artery disease",
+        "Ischemic heart disease",
+        "Sudden cardiac death"
+    ]
+  },
+  "Familial Hypertriglyceridemia": {
+    "family_history": [
+        "Familial hypertriglyceridemia",
+        "Hypertriglyceridemia",
+        "Pancreatitis"
+    ]
+  },
+  "HDL Deficiency": {
+    "family_history": [
+        "HDL deficiency",
+        "Low HDL cholesterol",
+        "Hypoalphalipoproteinemia",
+        "Tangier disease",
+        "Premature coronary artery disease"
+    ]
+  },
+  "Elevated APOB": {
+    "family_history": [
+        "Elevated apolipoprotein b",
+        "Hyperapobetalipoproteinemia",
+        "Familial combined hyperlipidemia",
+        "Premature coronary artery disease"
+    ]
+  },
+  "Li-Fraumeni Syndrome": {
+    "family_history": [
+        "Li-Fraumeni syndrome",
+        "TP53 mutation",
+        "Sarcoma",
+        "Osteosarcoma",
+        "Breast cancer",
+        "Brain tumor",
+        "Adrenocortical carcinoma",
+        "Leukemia",
+        "Choroid plexus carcinoma",
+        "Embryonal rhabdomyosarcoma, anaplastic subtype"
+    ],
+    "pathogenic_tumors": [
+        "Adrenocortical carcinoma",
+        "Choroid plexus carcinoma",
+        "Embryonal rhabdomyosarcoma, anaplastic subtype"
+    ],
+    "lfs_spectrum_tumors": [
+        "Sarcoma",
+        "Osteosarcoma",
+        "Breast cancer",
+        "Brain tumor",
+        "Adrenocortical carcinoma",
+        "Leukemia",
+        "Choroid plexus carcinoma",
+        "Embryonal rhabdomyosarcoma, anaplastic subtype"
+    ]
+  },
+  "PTEN Hamartoma Tumor Syndrome": {
+    "family_history": [
+        "PTEN hamartoma tumor syndrome",
+        "Cowden syndrome",
+        "Bannayan-Riley-Ruvalcaba syndrome",
+        "PTEN mutation"
+    ],
+    "major_criteria": [
+      "Macrocephaly",
+      "Multiple trichilemmomas",
+      "Multiple oral papillomas",
+      "Multiple gastrointestinal hamartomas"
+    ],
+    "minor_criteria": [
+      "Autism spectrum disorder",
+      "Developmental delay",
+      "Vascular anomaly",
+      "Gastrointestinal polyps",
+      "Intellectual disability",
+      "Thyroid nodule",
+      "Lipoma"
+    ],
+    "macrocephaly_plus_criteria": [
+      "Autism spectrum disorder",
+      "Developmental delay",
+      "Vascular anomaly",
+      "Gastrointestinal polyps"
+    ]
+  }
+}
