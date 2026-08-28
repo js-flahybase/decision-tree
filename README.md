@@ -35,7 +35,7 @@ def evaluate_<condition>(labs, patient, genetics, family_history, symptoms=False
 
     # 4. Decide category
     if <strong combination met>:
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif <partial combination met>:
         category = "Early Pattern"
     else:
