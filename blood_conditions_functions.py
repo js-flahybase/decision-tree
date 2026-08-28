@@ -454,7 +454,7 @@ def evaluate_alzheimers(labs, patient, genetics, family_history, symptoms=False)
         (dyslipidemia_flag_likely and crp_likely and symptoms) or
         (dyslipidemia_flag_likely and crp_likely and family_history and symptoms)
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif dyslipidemia_flag_early and crp_early:
         category = "Early Pattern"
     else:
@@ -486,7 +486,7 @@ def evaluate_asthma(labs, patient, genetics, family_history, symptoms=False):
     neutrophil_flag = note(triggered, "neutrophils", neutrophils, is_above(neutrophils, NEUTROPHILS_RANGE[0]), f">{NEUTROPHILS_RANGE[0]}")
 
     if (eosinophil_likely and neutrophil_flag) or (eosinophil_likely and neutrophil_flag and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif eosinophil_early:
         category = "Early Pattern"
     else:
@@ -515,7 +515,7 @@ def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, symptoms
         note(triggered, "eosinophils", eosinophils, True, f">={EOSINOPHILS_BORDERLINE}")
 
     if eosinophil_likely or (eosinophil_likely and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif eosinophil_early:
         category = "Early Pattern"
     else:
@@ -557,7 +557,7 @@ def evaluate_copd(labs, patient, genetics, family_history, symptoms=False):
     neutrophil_flag = note(triggered, "neutrophils", neutrophils, is_above(neutrophils, NEUTROPHILS_RANGE[0]), f">{NEUTROPHILS_RANGE[0]}")
 
     if (eosinophil_flag_likely and neutrophil_flag and fibrinogen_flag and crp_elevated_flag) or (eosinophil_flag_likely and neutrophil_flag and fibrinogen_flag and crp_elevated_flag and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif (crp_at_risk_flag and eosinophil_flag_early):
         category = "Early Pattern"
     else:
@@ -595,7 +595,7 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, symptoms=F
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
     if (tsh_suppressed and hormone_flag and tpoab_flag) or (tsh_suppressed and hormone_flag and tpoab_flag and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif tsh_borederline_suppressed and (hormone_flag or tpoab_flag):
         category = "Early Pattern"
     else:
@@ -628,7 +628,7 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=Fa
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
     if (tsh_high and free_t4_low and tpoab_flag):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     # tsh_mild and tpoab_flag case covers early pattern w/o user context
     elif tsh_mild and (tpoab_flag or family_history):
         category = "Early Pattern"
@@ -664,7 +664,7 @@ def evaluate_ibd(labs, patient, genetics, family_history, symptoms=False):
     anemia_flag = note(triggered, "hemoglobin", hemoglobin, is_below(hemoglobin, hb_min), f"<{hb_min}")
     albumin_flag = note(triggered, "albumin", albumin, is_below(albumin, ALBUMIN_RANGE[0]), f"<{ALBUMIN_RANGE[0]}")
     if (crp_elevated_flag and anemia_flag and albumin_flag) or (crp_elevated_flag and anemia_flag and albumin_flag and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif crp_at_risk_flag:
         category = "Early Pattern"
     else:
@@ -701,7 +701,7 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
     platelets_low = note(triggered, "platelets", platelets, is_below(platelets, PLATELETS_RANGE[0]), f"<{PLATELETS_RANGE[0]}")
 
     if (lft_flag and fib4_elevated and platelets_low) or (lft_flag and fib4_elevated and platelets_low and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif (lft_flag or fib4_at_risk):
         category = "Early Pattern"
     else:
@@ -721,7 +721,7 @@ def evaluate_osteoarthritis(labs, patient, genetics, family_history, symptoms=Fa
         return [{"Condition": "Osteoarthritis", "Category": GENE_NOT_FOUND}]
 
     if symptoms or family_history:
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     else:
         category = "Early Pattern"
     # else:
@@ -789,7 +789,7 @@ def evaluate_parkinsons(labs, patient, genetics, family_history, symptoms=False)
         note(triggered, "crp", crp, True, f">={CRP_AT_RISK}")
 
     if (dyslipidemia_flag_likely and crp_likely) or (dyslipidemia_flag_likely and crp_likely and (family_history or symptoms)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif dyslipidemia_flag_early and crp_early:
         category = "Early Pattern"
     else:
@@ -833,7 +833,7 @@ def evaluate_psoriasis(labs, patient, genetics, family_history, symptoms=False):
         note(triggered, "nlr", nlr, True, f">={NLR_RANGE[0]}")
 
     if (crp_likely and esr_flag and nlr_likely) or (crp_likely and esr_flag and nlr_likely and (family_history or symptoms)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif crp_early and esr_flag and nlr_early:
         category = "Early Pattern"
     else:
@@ -903,7 +903,7 @@ def evaluate_rheumatoid_arthritis(labs, patient, genetics, family_history, sympt
         note(triggered, "crp", crp, True, f">={CRP_AT_RISK}")
 
     if (dyslipidemia_flag_likely and crp_likely and esr_flag) or (dyslipidemia_flag_likely and crp_likely and esr_flag and (family_history or symptoms)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     # added for early pattern w/o user context (labs only)
     elif dyslipidemia_flag_early and crp_early and esr_flag:
         category = "Early Pattern"
@@ -935,7 +935,7 @@ def evaluate_rhinitis(labs, patient, genetics, family_history, symptoms=False):
     ige_flag = note(triggered, "ige", ige, is_elevated(ige, IGE_UPPER_NORMAL), f">={IGE_UPPER_NORMAL}")
 
     if (eosinophil_flag_likely and ige_flag) or (eosinophil_flag_likely and ige_flag and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif eosinophil_flag_early or ige_flag:
         category = "Early Pattern"
     else:
@@ -977,7 +977,7 @@ def evaluate_t2d(labs, patient, genetics, family_history, symptoms=False):
     insulin_resistance_flag = note(triggered, "fasting_insulin", fasting_insulin, is_above(fasting_insulin, FASTING_INSULIN_RANGE[0]), f">={FASTING_INSULIN_RANGE[0]}")
 
     if (hyperglycemia) or (hyperglycemia and (symptoms or family_history)):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif hyperglycemia_early and insulin_resistance_flag:
         category = "Early Pattern"
     else:
@@ -1026,7 +1026,7 @@ def evaluate_mody(labs, patient, genetics, family_history, symptoms=False):
     hyperglycemia_early = hba1c_at_risk or fg_at_risk
 
     if (hyperglycemia and age is not None and age < 25) or (hyperglycemia and family_history):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif hyperglycemia_early or family_history:
         category = "Early Pattern"
     else:
@@ -1053,7 +1053,7 @@ def evaluate_men4(labs, patient, genetics, family_history, endocrine_conditions=
     phpt_pattern = hypercalcemia and elevated_pth
 
     if phpt_pattern and (endocrine_conditions or family_history):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif phpt_pattern or (endocrine_conditions and family_history):
         category = "Early Pattern"
     else:
@@ -1085,7 +1085,7 @@ def evaluate_muscular_dystrophy(labs, patient, genetics, family_history, symptom
         note(triggered, "ck", ck, True, f">={ck_moderate_multiple}")
 
     if marked_ck_elevation and (symptoms or family_history):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     # the just marked case added for early pattern w/o user context
     elif marked_ck_elevation or (moderate_ck_elevation and (symptoms or family_history)):
         category = "Early Pattern"
@@ -1131,7 +1131,7 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
             or note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
 
     if elevated_likely or (elevated_early and age is not None and age < 40) or (elevated_early and family_history):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif elevated_early or family_history:
         category = "Early Pattern"
     else:
@@ -1183,7 +1183,7 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
     # --- Case 1: imaging performed and abnormal -> imaging drives the call ---
     if imaging_performed and imaging_abnormal:
         if imaging_high_spec or imaging_multiple or symptoms or family_history:
-            category = "Likely Disease Onset"
+            category = "Significant Pattern"
         else:
             category = "Early Pattern"
 
@@ -1270,7 +1270,7 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
         (any_moderate and symptoms and age is not None and age < 40) or
         (any_moderate and symptoms and family_history)
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     # (any_moderate + age) added for early pattern w/o user context (labs only)
     elif family_history or (any_moderate and symptoms) or (any_moderate and age is not None and age < 40):
         category = "Early Pattern"
@@ -1326,7 +1326,7 @@ def evaluate_hypertriglyceridemia(labs, patient, genetics, family_history, sympt
         (tg_severe and family_history) or
         (tg_severe and hdl_severely_low)
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif (
         any_moderate_abnormal or
         (tg_borderline and hdl_low) or
@@ -1374,7 +1374,7 @@ def evaluate_hdl_deficiency(labs, patient, genetics, family_history, symptoms=Fa
         isolated_significant or
         (isolated_moderate and ((age is not None and age < 40) or family_history))
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif isolated_moderate or mixed_moderate or family_history:
         category = "Early Pattern"
     else:
@@ -1446,7 +1446,7 @@ def evaluate_li_fraumeni_syndrome(labs, patient, genetics, family_history, sympt
         multiple_primaries or
         (has_lfs_tumor and early_onset and family_history)
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif has_lfs_tumor or family_history:
         category = "Early Pattern"
     else:
@@ -1485,7 +1485,7 @@ def evaluate_phts(labs, patient, genetics, family_history, symptoms=False, condi
         (major_count >= 3 and (macrocephaly or gi_hamartoma)) or
         (major_count >= 2 and minor_count >= 3)
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif major_count >= 1 or minor_count >= 2 or family_history:
         category = "Early Pattern"
     else:
@@ -1540,7 +1540,7 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
         (family_history and symptoms) or
         (family_history and past_history)
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif (
         family_history or
         (parameter and symptoms and past_history) or
@@ -1608,7 +1608,7 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
         if tsat_elevated and ferritin_elevated:
             score = sum([family_history, symptoms, past_history, abnormal_labs])
             if score >= 3:
-                category = "Likely Disease Onset"
+                category = "Significant Pattern"
             elif score >= 1:
                 category = "Early Pattern" #the score=1 covers early pattern w/o user context (abnormal labs only)
             else:
@@ -1628,7 +1628,7 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
     if iron_profile_done is False:
         score = sum([family_history, symptoms, past_history, abnormal_labs])
         if score >= 3:
-            category = "Likely Disease Onset"
+            category = "Significant Pattern"
         elif score >= 1:
             category = "Early Pattern" #the score=1 covers early pattern w/o user context (abnormal labs only)
         else:
@@ -1667,7 +1667,7 @@ def evaluate_celiac_disease(labs, patient, genetics, family_history, past_histor
         TTG_Likely or
         (TTG_Early and (family_history or symptoms or past_history))
     ):
-        category = "Likely Disease Onset"
+        category = "Significant Pattern"
     elif (
         TTG_Early
     ):
