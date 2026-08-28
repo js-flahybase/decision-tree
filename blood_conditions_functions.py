@@ -1651,7 +1651,7 @@ def evaluate_celiac_disease(labs, patient, genetics, family_history, past_histor
     if not has_flagged_gene(genetics, "Celiac Disease"):
         return [{"Condition": "Celiac Disease", "Category": GENE_NOT_FOUND}]
 
-    ttg = labs.get("tTG-IgA") or labs.get("Tissue Transglutaminase (tTG) Antibody, IgA")
+    ttg = labs.get("tTG-IgA") #or labs.get("Tissue Transglutaminase (tTG) Antibody, IgA")
 
     TTG_Early = is_elevated(ttg, TTG_RANGE[0]) #and not is_above(ttg, TTG_RANGE[1])
     TTG_Likely = is_above(ttg, TTG_RANGE[1])
