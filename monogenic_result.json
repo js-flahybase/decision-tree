@@ -16,6 +16,7 @@
     "RAF_global": "1.2392955843898327e-06",
     "RAF_SAS": "2.1963058136214887e-05",
     "Findings": "HPS3 gene has one heterozygous pathogenic variant detected that is associated with Hermansky-Pudlak syndrome 3.",
-    "Interpretation": "Hermansky-Pudlak syndrome 3 follows an autosomal recessive inheritance pattern. Detection of a single pathogenic variant suggests carrier status. Two pathogenic variants, typically one inherited from each parent and confirmed to be in trans, are generally required for disease manifestation."
+    "Interpretation": "Hermansky-Pudlak syndrome 3 follows an autosomal recessive inheritance pattern. Detection of a single pathogenic variant suggests carrier status. Two pathogenic variants, typically one inherited from each parent and confirmed to be in trans, are generally required for disease manifestation.",
+    "in_acmg": false
   }
 ]

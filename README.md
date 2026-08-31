@@ -39,7 +39,7 @@ def evaluate_<condition>(labs, patient, genetics, family_history, symptoms=False
     elif <partial combination met>:
         category = "Early Pattern"
     else:
-        category = "Typical"
+        category = "Elevated Susceptibility"
 
     return [{
         "Condition": "<Condition Name>",

@@ -1,10 +1,28 @@
-Condition,Category,Triggering Genetics,Triggering Parameters
-Atopic Dermatitis/Eczema,Significant Pattern,PRS:atopicdermatitis,eosinophils=9.0 (>0.42)
-COPD,Early Pattern,,"crp=4.5 (>3.0), eosinophils=9.0 (>0.42)"
-Inflammatory Bowel Disease,Early Pattern,PRS:ibd,crp=4.5 (>3.0)
-Non Alcoholic Fatty Liver Disease,Early Pattern,PRS:nafld,ast=48.0 (>10)
-Osteoarthritis,Early Pattern,PRS:osteoarthritis,
-Parkinson's Disease,Significant Pattern,PRS:parkinson,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), crp=4.5 (>3.0)"
-Psoriasis,Typical,PRS:psoriasis,"esr=35.0 (>=16), crp=4.5 (>3.0)"
-Rhinitis,Early Pattern,PRS:rhinitis,eosinophils=9.0 (>0.4)
-Coronary Artery Disease,Significant Pattern,PRS:cad,"ldl_c=205.0 (>=160), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)"
+Domain,Condition,Category,Triggering Genetics,Triggering Parameters,Triggering PRS,Snapshot Category
+Brain Health,Alzheimer's Disease,Typical,,,,Normal - nothing to act on
+Respiratory Health,Asthma,Typical,,,,Normal - nothing to act on
+Skin Health,Atopic Dermatitis/Eczema,Significant Pattern,PRS:atopicdermatitis,eosinophils=9.0 (>0.42),97.5,To discuss with General Practitioner
+Respiratory Health,COPD,Typical,,,,Normal - nothing to act on
+Endocrine Health,Hyperthyroidism,Typical,,,,Normal - nothing to act on
+Endocrine Health,Hypothyroidism,Typical,,,,Normal - nothing to act on
+Digestive Health,Inflammatory Bowel Disease,Early Pattern,PRS:ibd,crp=4.5 (>3.0),95,To discuss with General Practitioner
+Digestive Health,NAFLD,Early Pattern,PRS:nafld,ast=48.0 (>10),95,To discuss with General Practitioner
+Joints Health,Osteoarthritis,Early Pattern,PRS:osteoarthritis,,97.5,To discuss with General Practitioner
+Brain Health,Parkinson's Disease,Significant Pattern,PRS:parkinson,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), crp=4.5 (>3.0)",97.5,To discuss with General Practitioner
+Skin Health,Psoriasis,Elevated Susceptibility,PRS:psoriasis,"esr=35.0 (>=16), crp=4.5 (>3.0)",97.5,Worth acting on for prevention
+Immune Health,Rheumatoid Arthritis,Typical,,,,Normal - nothing to act on
+Respiratory Health,Rhinitis,Early Pattern,PRS:rhinitis,eosinophils=9.0 (>0.4),95,To discuss with General Practitioner
+Endocrine Health,Type 2 Diabetes,Typical,,,,Normal - nothing to act on
+Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Normal - nothing to act on
+Endocrine Health,Multiple Endocrine Neoplasia Type 4,Typical,,,,Normal - nothing to act on
+Muscle Health,Muscular Dystrophy,Typical,,,,Normal - nothing to act on
+Kidney & Metabolic Health,Gilbert Syndrome,Typical,,,,Normal - nothing to act on
+Digestive Health,Hereditary Hemochromatosis,Typical,,,,Normal - nothing to act on
+Immune Health,Celiac Disease,Typical,,,,Normal - nothing to act on
+Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Normal - nothing to act on
+Cardiac Health,Cardiomyopathy,Typical,,,,Normal - nothing to act on
+Cardiac Health,Coronary Artery Disease,Significant Pattern,PRS:cad,"ldl_c=205.0 (>=160), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)",97.5,To discuss with General Practitioner
+Cardiac Health,Familial Hypertriglyceridemia,Typical,,,,Normal - nothing to act on
+Cardiac Health,HDL Deficiency,Typical,,,,Normal - nothing to act on
+Cancer,Li-Fraumeni Syndrome,Typical,,,,Normal - nothing to act on
+Cancer,PTEN Hamartoma Tumor Syndrome,Typical,,,,Normal - nothing to act on

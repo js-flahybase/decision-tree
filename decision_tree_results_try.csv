@@ -1,0 +1,28 @@
+Domain,Condition,Category,Triggering Genetics,Triggering Parameters,Triggering PRS,Snapshot Category
+Brain Health,Alzheimer's Disease,Typical,,,,Typical - nothing to act on
+Respiratory Health,Asthma,Typical,,,,Typical - nothing to act on
+Skin Health,Atopic Dermatitis/Eczema,Elevated Susceptibility,PRS:atopicdermatitis,,97.5,Worth acting on for prevention
+Respiratory Health,COPD,Typical,,,,Typical - nothing to act on
+Endocrine Health,Hyperthyroidism,Typical,,,,Typical - nothing to act on
+Endocrine Health,Hypothyroidism,Typical,,,,Typical - nothing to act on
+Digestive Health,Inflammatory Bowel Disease,Early Pattern,PRS:ibd,crp=1.1 (>=1.0),95,To discuss with General Practitioner
+Digestive Health,NAFLD,Early Pattern,PRS:nafld,ast=21.3 (>10),95,To discuss with General Practitioner
+Joints Health,Osteoarthritis,Elevated Susceptibility,PRS:osteoarthritis,,97.5,Worth acting on for prevention
+Brain Health,Parkinson's Disease,Elevated Susceptibility,PRS:parkinson,"triglycerides=251.44 (>=200), crp=1.1 (>=0.8)",97.5,Worth acting on for prevention
+Skin Health,Psoriasis,Elevated Susceptibility,PRS:psoriasis,crp=1.1 (>=0.8),97.5,Worth acting on for prevention
+Immune Health,Rheumatoid Arthritis,Typical,,,,Typical - nothing to act on
+Respiratory Health,Rhinitis,Elevated Susceptibility,PRS:rhinitis,,95,Worth acting on for prevention
+Endocrine Health,Type 2 Diabetes,Typical,,,,Typical - nothing to act on
+Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothing to act on
+Endocrine Health,Multiple Endocrine Neoplasia Type 4,Typical,,,,Typical - nothing to act on
+Muscle Health,Muscular Dystrophy,Typical,,,,Typical - nothing to act on
+Kidney & Metabolic Health,Gilbert Syndrome,Typical,,,,Typical - nothing to act on
+Digestive Health,Hereditary Hemochromatosis,Typical,,,,Typical - nothing to act on
+Immune Health,Celiac Disease,Typical,,,,Typical - nothing to act on
+Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Typical - nothing to act on
+Cardiac Health,Cardiomyopathy,Typical,,,,Typical - nothing to act on
+Cardiac Health,Coronary Artery Disease,Early Pattern,PRS:cad,triglycerides=251.44 (>=150),97.5,To discuss with General Practitioner
+Cardiac Health,Familial Hypertriglyceridemia,Typical,,,,Typical - nothing to act on
+Cardiac Health,HDL Deficiency,Typical,,,,Typical - nothing to act on
+Cancer,Li-Fraumeni Syndrome,Typical,,,,Typical - nothing to act on
+Cancer,PTEN Hamartoma Tumor Syndrome,Typical,,,,Typical - nothing to act on
