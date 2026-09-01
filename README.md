@@ -46,7 +46,7 @@ def evaluate_<condition>(labs, patient, genetics, family_history, symptoms=False
         "Category": category
     }]
 ```
-
+`GENE_NOT_FOUND` is set to `"Typical"` — meaning a condition whose gene/PRS gate never opened is labeled the same as a true "nothing to act on" result, since neither lab nor context data was ever checked for it.
 ---
 
 ## Gene Gate: Monogenic Flag OR Polygenic (PRS) Elevation
@@ -56,18 +56,21 @@ def evaluate_<condition>(labs, patient, genetics, family_history, symptoms=False
 1. **Monogenic hit** — a specific gene tied to this condition (via `CONDITION_GENES`) was flagged as Pathogenic/Likely Pathogenic.
 2. **Polygenic (PRS) elevation** — this condition has a polygenic risk score entry, and its category is `elevated` or `moderately_elevated`.
 
-A small number of conditions (currently COPD, Psoriasis) have no known gene association at all — these use `NO_GENE_GATE` and always proceed straight to lab/symptom evaluation, regardless of genetics.
-
-If neither a gene nor a PRS signal is present (and the condition isn't `NO_GENE_GATE`), the function returns immediately with `GENE_NOT_FOUND` — no lab or symptom data is checked at all.
+If neither a gene nor a PRS signal is present, the function returns immediately with `GENE_NOT_FOUND` (Typical) — no lab or symptom data is checked at all.
 
 ---
 
 ## Output Columns
 
-Each result includes two extra fields beyond `Condition` and `Category`:
+Each result includes these columns:
 
-- **Triggering Genetics** — which gene(s) and/or PRS entry actually passed the gate (e.g. `HFE` or `PRS:cad`)
-- **Triggering Parameters** — which specific lab values crossed a threshold, and by how much (e.g. `crp=3.2 (>=3.0)`)
+- **Domain** — The broad health category this condition falls under (e.g. Cardiac Health, Endocrine Health, Digestive Health)
+- **Condition** — The condition name
+- **Category** — `Typical`, `Elevated Susceptibility`, `Early Pattern`, `Significant Pattern`
+- **DNA Marker(s)** — which gene(s) entry actually passed the gate for that condition (e.g. `HFE`)
+- **Blood Marker(s)** — which specific lab values crossed a threshold to support `Category` assignment, and by how much (e.g. `crp=3.2 (>=3.0)`)
+- **Triggering PRS** — Shown when the condition's PRS category is `elevated` or `moderately_elevated` and contributed to passing the gate
+- **Snapshot Category** — A plain-language recommendation: `To discuss with General Practitioner`, `Worth acting on for prevention`, or `Typical - nothing to act on`
 
 This makes it possible to see *why* a category was reached, not just the final result.
 
@@ -87,11 +90,25 @@ This makes it possible to see *why* a category was reached, not just the final r
 ```python
 {
     "flagged_genes": [...],            # from the monogenic JSON + APOE (if ε4 present)
+    "acmg_genes": [...],                 # subset of flagged_genes also listed as ACMG-actionable
     "prs_elevated_conditions": {...},  # set of condition keys from the PRS JSON where category is elevated
+    "prs_categories": {...},             # raw PRS category string per condition key
     "apoe_status": "e3/e4",            # raw APOE genotype string
 }
 ```
 This dict is built once per patient by `build_genetics_from_jsons(...)`, not assembled inside each function.
+
+---
+ 
+## Patient Sex and Age
+ 
+`sex` and `age` are read from the blood report CSV by default, using rows like:
+```
+parameter,value
+sex,male
+age,35
+```
+The `--sex`/`--age` command-line flags act as **overrides**: if provided, they take priority over whatever is in the CSV. If neither the CSV nor the command line provides a value, the script raises an error rather than guessing.
 
 ---
 
@@ -129,10 +146,14 @@ Therefore, a missing laboratory value **never causes the function to crash**; it
 ## Running the Script
 
 ```bash
-python script.py <monogenic.json> <prs.json> <apoe.json> <blood.csv> <output.csv> --sex male --age 35
+python script.py <monogenic.json> <prs.json> <apoe.json> <blood.csv> <output.csv>
+```
+Optional overrides (only needed if the blood CSV doesn't include `sex`/`age` rows, or we want to override them):
+```bash
+--sex {male, female} --age int(value)
 ```
 
-This runs all 28 condition functions against the supplied data and writes every non-`GENE_NOT_FOUND` result to `output.csv` (columns: `Condition`, `Category`).
+This runs all 27 condition functions against the supplied data and writes result to `output.csv`.
 
 ---
 

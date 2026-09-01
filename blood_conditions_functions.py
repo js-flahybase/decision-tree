@@ -403,13 +403,14 @@ def get_gene_trigger(genetics, condition_name):
         flagged = genetics.get("flagged_genes", [])
         parts.extend(gene for gene in required_genes if gene in flagged)
 
-    prs_key = None
-    for key, mapped_name in PRS_CONDITION_KEY_MAP.items():
-        if mapped_name == condition_name:
-            prs_key = key
-            break
-    if prs_key is not None and prs_key in genetics.get("prs_elevated_conditions", set()):
-        parts.append(f"PRS:{prs_key}")
+    # Triggering Genetics renamed as DNA Marker(s), now onlt includes gene flag, PRS classification in Triggering PRS, elevation info already being added in report.
+    # prs_key = None
+    # for key, mapped_name in PRS_CONDITION_KEY_MAP.items():
+    #     if mapped_name == condition_name:
+    #         prs_key = key
+    #         break
+    # if prs_key is not None and prs_key in genetics.get("prs_elevated_conditions", set()):
+    #     parts.append(f"PRS:{prs_key}")
 
     return ", ".join(parts)
 
@@ -710,10 +711,10 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, symptoms=F
     elif tsh_borederline_suppressed:
         note(triggered, "tsh", tsh, True, f"<{TSH_BORDERLINE}")
 
-    hormone_flag = (
-        note(triggered, "free_t3", free_t3, is_above(free_t3, FREE_T3_RANGE[0]), f">{FREE_T3_RANGE[0]}")
-        or note(triggered, "free_t4", free_t4, is_above(free_t4, FREE_T4_RANGE[0]), f">{FREE_T4_RANGE[0]}")
-    )
+    free_t3_flag = note(triggered, "free_t3", free_t3, is_above(free_t3, FREE_T3_RANGE[0]), f">{FREE_T3_RANGE[0]}")
+    free_t4_flag = note(triggered, "free_t4", free_t4, is_above(free_t4, FREE_T4_RANGE[0]), f">{FREE_T4_RANGE[0]}")
+    hormone_flag = free_t3_flag or free_t4_flag
+
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
     if (tsh_suppressed and hormone_flag and tpoab_flag) or (tsh_suppressed and hormone_flag and tpoab_flag and (symptoms or family_history)):
@@ -812,12 +813,17 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
     ast_alt_ratio = labs.get("ast/alt")
 
     triggered = []
+    ast_flag = note(triggered, "ast", ast, is_above(ast, AST_RANGE[0]), f">{AST_RANGE[0]}")
+    alt_flag = note(triggered, "alt", alt, is_above(alt, ALT_RANGE[0]), f">{ALT_RANGE[0]}")
+    ggt_flag = note(triggered, "ggt", ggt, is_above(ggt, GGT_RANGE[0]), f">{GGT_RANGE[0]}")
+    ratio_flag = note(triggered, "ast/alt", ast_alt_ratio, is_above(ast_alt_ratio, AST_ALT_RATIO_RANGE[0]), f">{AST_ALT_RATIO_RANGE[0]}")
     lft_flag = (
-        note(triggered, "ast", ast, is_above(ast, AST_RANGE[0]), f">{AST_RANGE[0]}")
-        or note(triggered, "alt", alt, is_above(alt, ALT_RANGE[0]), f">{ALT_RANGE[0]}")
-        or note(triggered, "ggt", ggt, is_above(ggt, GGT_RANGE[0]), f">{GGT_RANGE[0]}")
-        or note(triggered, "ast/alt", ast_alt_ratio, is_above(ast_alt_ratio, AST_ALT_RATIO_RANGE[0]), f">{AST_ALT_RATIO_RANGE[0]}")
+        ast_flag
+        or alt_flag
+        or ggt_flag
+        or ratio_flag
     )
+
     fib4_elevated = note(triggered, "fib4", fib4, is_elevated(fib4, FIB4_ELEVATED), f">={FIB4_ELEVATED}")
     fib4_at_risk = note(triggered, "fib4", fib4, fib4 is not None and FIB4_AT_RISK <= fib4 < FIB4_ELEVATED, f"[{FIB4_AT_RISK}-{FIB4_ELEVATED})")
     platelets_low = note(triggered, "platelets", platelets, is_below(platelets, PLATELETS_RANGE[0]), f"<{PLATELETS_RANGE[0]}")
@@ -1247,13 +1253,13 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
     )
 
     if elevated_likely:
-        note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_ELEVATED), f">{LDL_C_ELEVATED}") \
-            or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}") \
-            or note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
+        ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_ELEVATED), f">{LDL_C_ELEVATED}")
+        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}")
+        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
     elif elevated_early:
-        note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_AT_RISK), f">{LDL_C_AT_RISK}") \
-            or note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_ELEVATED), f">{NON_HDL_C_ELEVATED}") \
-            or note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
+        ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_AT_RISK), f">{LDL_C_AT_RISK}")
+        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_ELEVATED), f">{NON_HDL_C_ELEVATED}")
+        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
 
     if elevated_likely or (elevated_early and age is not None and age < 40) or (elevated_early and family_history):
         category = "Significant Pattern"
@@ -1365,15 +1371,15 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
         is_elevated(lpa, LPA_ELEVATED)
     )
     if ldl_high:
-        note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}") \
-            or note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_SEVERE), f">={NON_HDL_C_SEVERE}") \
-            or note(triggered, "apob", apob, is_elevated(apob, APOB_ELEVATED), f">={APOB_ELEVATED}") \
-            or note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
+        ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}")
+        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_SEVERE), f">={NON_HDL_C_SEVERE}")
+        apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_ELEVATED), f">={APOB_ELEVATED}")
+        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
     elif ldl_moderate:
-        note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}") \
-            or note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_ELEVATED), f">={NON_HDL_C_ELEVATED}") \
-            or note(triggered, "apob", apob, is_elevated(apob, APOB_AT_RISK), f">={APOB_AT_RISK}") \
-            or note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
+        ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
+        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_ELEVATED), f">={NON_HDL_C_ELEVATED}")
+        apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_AT_RISK), f">={APOB_AT_RISK}")
+        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
 
     low_hdl = note(triggered, "hdl_c", hdl, is_below(hdl, hdl_min), f"<{hdl_min}")
     tg_moderate = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
@@ -1965,13 +1971,18 @@ for r in results:
     entry["Domain"] = CONDITION_DOMAINS.get(entry["Condition"], "")
     entry["Triggering PRS"] = get_triggering_prs(entry["Condition"], data["genetics"])
     entry["Snapshot Category"] = get_snapshot_category(entry["Condition"], entry["Category"], data["genetics"])
-    # entry["Category"] = resolve_typical_label(entry["Condition"], entry["Category"], data["genetics"])
+    
+    # entry["All Blood Marker(s)"] = entry.get("Blood Marker(s)", "") #uncomment this when want to include all threshold crossing markers (regardless of trigger category)
+    if entry.get("Category") not in PATTERN_CATEGORIES_INDICATING_TRIGGER:
+        entry["Blood Marker(s)"] = ""
+
 
 active_findings = [
     r[0]
     for r in results
 ]
 
+# Add "All Blood Marker(s)" to output csv when required all markers which crossed thresholds.
 with open(args.output_csv, "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category"])
     writer.writeheader()

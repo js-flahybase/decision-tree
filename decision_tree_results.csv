@@ -1,17 +1,17 @@
 Domain,Condition,Category,DNA Marker(s),Blood Marker(s),Triggering PRS,Snapshot Category
 Brain Health,Alzheimer's Disease,Typical,,,,Typical - nothing to act on
 Respiratory Health,Asthma,Typical,,,,Typical - nothing to act on
-Skin Health,Atopic Dermatitis/Eczema,Significant Pattern,PRS:atopicdermatitis,eosinophils=9.0 (>0.42),Polygenic Risk Classification: Elevated,To discuss with General Practitioner
+Skin Health,Atopic Dermatitis/Eczema,Significant Pattern,,eosinophils=9.0 (>0.42),Polygenic Risk Classification,To discuss with General Practitioner
 Respiratory Health,COPD,Typical,,,,Typical - nothing to act on
 Endocrine Health,Hyperthyroidism,Typical,,,,Typical - nothing to act on
 Endocrine Health,Hypothyroidism,Typical,,,,Typical - nothing to act on
-Digestive Health,Inflammatory Bowel Disease,Early Pattern,PRS:ibd,crp=4.5 (>3.0),Polygenic Risk Classification: Moderately Elevated,To discuss with General Practitioner
-Digestive Health,NAFLD,Early Pattern,PRS:nafld,ast=48.0 (>10),Polygenic Risk Classification: Moderately Elevated,To discuss with General Practitioner
-Joints Health,Osteoarthritis,Elevated Susceptibility,PRS:osteoarthritis,,Polygenic Risk Classification: Elevated,Worth acting on for prevention
-Brain Health,Parkinson's Disease,Elevated Susceptibility,PRS:parkinson,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), crp=4.5 (>3.0)",Polygenic Risk Classification: Elevated,Worth acting on for prevention
-Skin Health,Psoriasis,Elevated Susceptibility,PRS:psoriasis,"esr=35.0 (>=16), crp=4.5 (>3.0)",Polygenic Risk Classification: Elevated,Worth acting on for prevention
+Digestive Health,Inflammatory Bowel Disease,Early Pattern,,crp=4.5 (>3.0),Polygenic Risk Classification,To discuss with General Practitioner
+Digestive Health,NAFLD,Early Pattern,,"ast=48.0 (>10), alt=65.0 (>10), ggt=70.0 (>9)",Polygenic Risk Classification,To discuss with General Practitioner
+Joints Health,Osteoarthritis,Elevated Susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention
+Brain Health,Parkinson's Disease,Elevated Susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention
+Skin Health,Psoriasis,Elevated Susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention
 Immune Health,Rheumatoid Arthritis,Typical,,,,Typical - nothing to act on
-Respiratory Health,Rhinitis,Early Pattern,PRS:rhinitis,eosinophils=9.0 (>0.4),Polygenic Risk Classification: Moderately Elevated,To discuss with General Practitioner
+Respiratory Health,Rhinitis,Early Pattern,,eosinophils=9.0 (>0.4),Polygenic Risk Classification,To discuss with General Practitioner
 Endocrine Health,Type 2 Diabetes,Typical,,,,Typical - nothing to act on
 Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothing to act on
 Endocrine Health,Multiple Endocrine Neoplasia Type 4,Typical,,,,Typical - nothing to act on
@@ -21,7 +21,7 @@ Digestive Health,Hereditary Hemochromatosis,Typical,,,,Typical - nothing to act 
 Immune Health,Celiac Disease,Typical,,,,Typical - nothing to act on
 Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Typical - nothing to act on
 Cardiac Health,Cardiomyopathy,Typical,,,,Typical - nothing to act on
-Cardiac Health,Coronary Artery Disease,Significant Pattern,PRS:cad,"ldl_c=205.0 (>=160), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)",Polygenic Risk Classification: Elevated,To discuss with General Practitioner
+Cardiac Health,Coronary Artery Disease,Significant Pattern,,"ldl_c=205.0 (>=160), non_hdl_c=235.0 (>=190), apob=145.0 (>=130), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)",Polygenic Risk Classification,To discuss with General Practitioner
 Cardiac Health,Familial Hypertriglyceridemia,Typical,,,,Typical - nothing to act on
 Cardiac Health,HDL Deficiency,Typical,,,,Typical - nothing to act on
 Cancer,Li-Fraumeni Syndrome,Typical,,,,Typical - nothing to act on
