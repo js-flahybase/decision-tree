@@ -12,8 +12,8 @@ if __name__ == "__main__":
     parser.add_argument("apoe_json", help="Path to the APOE status JSON")
     parser.add_argument("blood_csv", help="Path to the blood report CSV")
     parser.add_argument("output_csv", help="Path to write the results CSV")
-    parser.add_argument("--sex", required=True, choices=["male", "female"], help="Patient's biological sex") ##
-    parser.add_argument("--age", required=True, type=int, help="Patient's age in years") ##
+    parser.add_argument("--sex", required=False, choices=["male", "female"], default=None, help="Patient's biological sex (optional override on csv extracted value)") # making it optional override
+    parser.add_argument("--age", required=False, type=int, default=None, help="Patient's age in years (optional override on csv extracted value)") #making it optional override
     args = parser.parse_args()
 
 # loading the reference user-context json (can also be done using args (but since this doesn't change with samples, so hard-coded using))
@@ -100,17 +100,28 @@ PRS_CONDITION_KEY_MAP = {
 def load_patient_data(monogenic_json, prs_json, apoe_json, blood_csv_path, sex, age):
     """
     Patient-reported context (family_history, symptoms, past_history) is 
-    NOT included here
+    NOT included here. sex/age are read from the blood csv by default. 
+    the args based --sex/--age on command line overrides csv values.
     """
     # -----------------------------
     # Blood report
     # -----------------------------
     labs = {}
+    csv_sex = None
+    csv_age = None
     with open(blood_csv_path) as f:
         reader = csv.DictReader(f)
         for row in reader:
             key = row["parameter"].strip().lower()
             value = row["value"].strip()
+
+            if key == "sex":
+                csv_sex = value.strip().lower() or None
+                continue
+            if key == "age":
+                csv_age = int(float(value)) if value else None
+                continue
+
             labs[key] = float(value) if value else None
 
     # Derive iron_profile_done: True only if BOTH ferritin and
@@ -121,7 +132,15 @@ def load_patient_data(monogenic_json, prs_json, apoe_json, blood_csv_path, sex, 
     
     genetics = build_genetics_from_jsons(monogenic_json, prs_json, apoe_json)
     
-    patient = {"sex": sex, "age": age}
+    final_sex = sex or csv_sex
+    final_age = age if age is not None else csv_age
+
+    if final_sex not in SEX_VALUES:
+        raise ValueError(f"Sex must be 'male' or 'female', got: {final_sex!r} (from --sex or csv)")
+    if final_age is None:
+        raise ValueError("Age not found in blood CSV and not provided via --age")
+
+    patient = {"sex": final_sex, "age": final_age}
 
     # just to check
     print(f"Patient: {patient}")
@@ -465,9 +484,9 @@ def get_snapshot_category(condition_name, result_category, genetics):
     return "" # fallback for error check (no clean answer)
 
 PRS_DISPLAY_VALUE = {
-    "elevated": "97.5",
-    "moderately_elevated": "95",
-    "moderately elevated": "95",
+    "elevated": "Polygenic Risk Classification: Elevated",
+    "moderately_elevated": "Polygenic Risk Classification: Moderately Elevated",
+    "moderately elevated": "Polygenic Risk Classification: Moderately Elevated",
 }
 
 def get_triggering_prs(condition_name, genetics):
@@ -565,8 +584,8 @@ def evaluate_alzheimers(labs, patient, genetics, family_history, symptoms=False)
 
     return [{
         "Condition": "Alzheimer's Disease", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Alzheimer's Disease"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Alzheimer's Disease"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -597,8 +616,8 @@ def evaluate_asthma(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Asthma", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Asthma"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Asthma"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -626,8 +645,8 @@ def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, symptoms
 
     return [{
         "Condition": "Atopic Dermatitis/Eczema", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Atopic Dermatitis/Eczema"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Atopic Dermatitis/Eczema"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -668,8 +687,8 @@ def evaluate_copd(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "COPD", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "COPD"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "COPD"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 # to be updated with thresholds once confirmed
@@ -706,8 +725,8 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, symptoms=F
 
     return [{
         "Condition": "Hyperthyroidism", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Hyperthyroidism"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Hyperthyroidism"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -740,8 +759,8 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=Fa
 
     return [{
         "Condition": "Hypothyroidism", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Hypothyroidism"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Hypothyroidism"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -775,8 +794,8 @@ def evaluate_ibd(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Inflammatory Bowel Disease", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Inflammatory Bowel Disease"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Inflammatory Bowel Disease"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -812,8 +831,8 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "NAFLD", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "NAFLD"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "NAFLD"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -832,8 +851,8 @@ def evaluate_osteoarthritis(labs, patient, genetics, family_history, symptoms=Fa
 
     return [{
         "Condition": "Osteoarthritis", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Osteoarthritis"),
-        "Triggering Parameters": "",
+        "DNA Marker(s)": get_gene_trigger(genetics, "Osteoarthritis"),
+        "Blood Marker(s)": "",
     }]
 
 
@@ -903,8 +922,8 @@ def evaluate_parkinsons(labs, patient, genetics, family_history, symptoms=False)
 
     return [{
         "Condition": "Parkinson's Disease", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Parkinson's Disease"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Parkinson's Disease"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -947,8 +966,8 @@ def evaluate_psoriasis(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Psoriasis", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Psoriasis"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Psoriasis"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1018,8 +1037,8 @@ def evaluate_rheumatoid_arthritis(labs, patient, genetics, family_history, sympt
 
     return [{
         "Condition": "Rheumatoid Arthritis", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Rheumatoid Arthritis"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Rheumatoid Arthritis"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1049,8 +1068,8 @@ def evaluate_rhinitis(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Rhinitis", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Rhinitis"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Rhinitis"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1091,8 +1110,8 @@ def evaluate_t2d(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Type 2 Diabetes", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Type 2 Diabetes"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Type 2 Diabetes"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 # =============================================================================
@@ -1140,8 +1159,8 @@ def evaluate_mody(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Maturity-Onset Diabetes of the Young", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Maturity-Onset Diabetes of the Young"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Maturity-Onset Diabetes of the Young"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1167,8 +1186,8 @@ def evaluate_men4(labs, patient, genetics, family_history, endocrine_conditions=
 
     return [{
         "Condition": "Multiple Endocrine Neoplasia Type 4", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Multiple Endocrine Neoplasia Type 4"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Multiple Endocrine Neoplasia Type 4"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1200,8 +1219,8 @@ def evaluate_muscular_dystrophy(labs, patient, genetics, family_history, symptom
 
     return [{
         "Condition": "Muscular Dystrophy", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Muscular Dystrophy"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Muscular Dystrophy"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1245,8 +1264,8 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Familial Hypercholesterolemia", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Familial Hypercholesterolemia"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Familial Hypercholesterolemia"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1282,8 +1301,8 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
         return [{
             "Condition": "Cardiomyopathy",
             "Category": "Elevated Susceptibility",
-            "Triggering Genetics": gene_trigger,
-            "Triggering Parameters": ", ".join(triggered),
+            "DNA Marker(s)": gene_trigger,
+            "Blood Marker(s)": ", ".join(triggered),
         }]
 
     # --- Case 1: imaging performed and abnormal -> imaging drives the call ---
@@ -1310,8 +1329,8 @@ def evaluate_cardiomyopathy(labs, patient, genetics, family_history, symptoms=Fa
 
     return [{
         "Condition": "Cardiomyopathy", "Category": category,
-        "Triggering Genetics": gene_trigger,
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": gene_trigger,
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1385,8 +1404,8 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
 
     return [{
         "Condition": "Coronary Artery Disease", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Coronary Artery Disease"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Coronary Artery Disease"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 # Familial Hypertriglyceridemia
@@ -1444,8 +1463,8 @@ def evaluate_hypertriglyceridemia(labs, patient, genetics, family_history, sympt
 
     return [{
         "Condition": "Familial Hypertriglyceridemia", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Familial Hypertriglyceridemia"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Familial Hypertriglyceridemia"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 # HDL Deficiency
@@ -1488,11 +1507,11 @@ def evaluate_hdl_deficiency(labs, patient, genetics, family_history, symptoms=Fa
 
     return [{
         "Condition": "HDL Deficiency", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "HDL Deficiency"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "HDL Deficiency"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
-
+# all terminology are kept old, not updated for this, to have reference.
 # Elevated Apolipoprotein B
 # def evaluate_apob(labs, patient, genetics, family_history, symptoms=False):
 #     if not has_flagged_gene(genetics, "Elevated Apolipoprotein B"):
@@ -1560,8 +1579,8 @@ def evaluate_li_fraumeni_syndrome(labs, patient, genetics, family_history, sympt
 
     return [{
         "Condition": "Li-Fraumeni Syndrome", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Li-Fraumeni Syndrome"),
-        "Triggering Parameters": "",
+        "DNA Marker(s)": get_gene_trigger(genetics, "Li-Fraumeni Syndrome"),
+        "Blood Marker(s)": "",
     }]
 
 
@@ -1599,8 +1618,8 @@ def evaluate_phts(labs, patient, genetics, family_history, symptoms=False, condi
 
     return [{
         "Condition": "PTEN Hamartoma Tumor Syndrome", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "PTEN Hamartoma Tumor Syndrome"),
-        "Triggering Parameters": "",
+        "DNA Marker(s)": get_gene_trigger(genetics, "PTEN Hamartoma Tumor Syndrome"),
+        "Blood Marker(s)": "",
     }]
 
 
@@ -1659,8 +1678,8 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
 
     return [{
         "Condition": "Gilbert Syndrome", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Gilbert Syndrome"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Gilbert Syndrome"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 # Hereditary Hemochromatosis
@@ -1704,8 +1723,8 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
         if tsat_low and ferritin_not_elevated:
             return [{
                 "Condition": "Hereditary Hemochromatosis", "Category": "Elevated Susceptibility",
-                "Triggering Genetics": gene_trigger,
-                "Triggering Parameters": ", ".join(triggered),
+                "DNA Marker(s)": gene_trigger,
+                "Blood Marker(s)": ", ".join(triggered),
             }]
 
         tsat_elevated = note(triggered, "transferrin_saturation", transferrin_saturation, is_elevated(transferrin_saturation, TRANSFERRIN_SATURATION_ELEVATED), f">={TRANSFERRIN_SATURATION_ELEVATED}")
@@ -1721,14 +1740,14 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
                 category = "Elevated Susceptibility"
             return [{
                 "Condition": "Hereditary Hemochromatosis", "Category": category,
-                "Triggering Genetics": gene_trigger,
-                "Triggering Parameters": ", ".join(triggered),
+                "DNA Marker(s)": gene_trigger,
+                "Blood Marker(s)": ", ".join(triggered),
             }]
 
         return [{
             "Condition": "Hereditary Hemochromatosis", "Category": "Elevated Susceptibility",
-            "Triggering Genetics": gene_trigger,
-            "Triggering Parameters": ", ".join(triggered),
+            "DNA Marker(s)": gene_trigger,
+            "Blood Marker(s)": ", ".join(triggered),
         }]
 
     if iron_profile_done is False:
@@ -1741,14 +1760,14 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
             category = "Elevated Susceptibility"
         return [{
             "Condition": "Hereditary Hemochromatosis", "Category": category,
-            "Triggering Genetics": gene_trigger,
-            "Triggering Parameters": ", ".join(triggered),
+            "DNA Marker(s)": gene_trigger,
+            "Blood Marker(s)": ", ".join(triggered),
         }]
     return [{
         "Condition": "Hereditary Hemochromatosis",
         "Category": "Elevated Susceptibility",
-        "Triggering Genetics": gene_trigger,
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": gene_trigger,
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
@@ -1783,14 +1802,14 @@ def evaluate_celiac_disease(labs, patient, genetics, family_history, past_histor
 
     return [{
         "Condition": "Celiac Disease", "Category": category,
-        "Triggering Genetics": get_gene_trigger(genetics, "Celiac Disease"),
-        "Triggering Parameters": ", ".join(triggered),
+        "DNA Marker(s)": get_gene_trigger(genetics, "Celiac Disease"),
+        "Blood Marker(s)": ", ".join(triggered),
     }]
 
 
 # calling:
 
-data = load_patient_data(args.monogenic_json, args.prs_json, args.apoe_json, args.blood_csv, sex=args.sex, age=args.age)
+data = load_patient_data(args.monogenic_json, args.prs_json, args.apoe_json, args.blood_csv, sex=args.sex, age=args.age) #remains same, these args remain override call.
 
 results = [
     # --- 14: labs/genetics-driven conditions ---
@@ -1954,7 +1973,7 @@ active_findings = [
 ]
 
 with open(args.output_csv, "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "Triggering Genetics", "Triggering Parameters", "Triggering PRS", "Snapshot Category"])
+    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category"])
     writer.writeheader()
     writer.writerows(active_findings)
 
