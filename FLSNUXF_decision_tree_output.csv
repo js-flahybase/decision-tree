@@ -1,14 +1,14 @@
 Domain,Condition,Category,DNA Marker(s),Blood Marker(s),Triggering PRS,Snapshot Category
 Brain Health,Alzheimer's Disease,Typical,,,,Typical - nothing to act on
 Respiratory Health,Asthma,Typical,,,,Typical - nothing to act on
-Skin Health,Atopic Dermatitis/Eczema,Elevated Susceptibility,PRS:atopicdermatitis,,Polygenic Risk Classification: Elevated,Worth acting on for prevention
+Skin Health,Atopic Dermatitis/Eczema,Elevated Susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention
 Respiratory Health,COPD,Typical,,,,Typical - nothing to act on
 Endocrine Health,Hyperthyroidism,Typical,,,,Typical - nothing to act on
 Endocrine Health,Hypothyroidism,Typical,,,,Typical - nothing to act on
 Digestive Health,Inflammatory Bowel Disease,Typical,,,,Typical - nothing to act on
 Digestive Health,NAFLD,Typical,,,,Typical - nothing to act on
 Joints Health,Osteoarthritis,Typical,,,,Typical - nothing to act on
-Brain Health,Parkinson's Disease,Elevated Susceptibility,PRS:parkinson,,Polygenic Risk Classification: Moderately Elevated,Worth acting on for prevention
+Brain Health,Parkinson's Disease,Elevated Susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention
 Skin Health,Psoriasis,Typical,,,,Typical - nothing to act on
 Immune Health,Rheumatoid Arthritis,Typical,,,,Typical - nothing to act on
 Respiratory Health,Rhinitis,Typical,,,,Typical - nothing to act on
@@ -21,7 +21,7 @@ Digestive Health,Hereditary Hemochromatosis,Typical,,,,Typical - nothing to act 
 Immune Health,Celiac Disease,Typical,,,,Typical - nothing to act on
 Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Typical - nothing to act on
 Cardiac Health,Cardiomyopathy,Typical,,,,Typical - nothing to act on
-Cardiac Health,Coronary Artery Disease,Elevated Susceptibility,PRS:cad,,Polygenic Risk Classification: Elevated,Worth acting on for prevention
+Cardiac Health,Coronary Artery Disease,Elevated Susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention
 Cardiac Health,Familial Hypertriglyceridemia,Typical,,,,Typical - nothing to act on
 Cardiac Health,HDL Deficiency,Typical,,,,Typical - nothing to act on
 Cancer,Li-Fraumeni Syndrome,Typical,,,,Typical - nothing to act on

@@ -484,9 +484,9 @@ def get_snapshot_category(condition_name, result_category, genetics):
     return "" # fallback for error check (no clean answer)
 
 PRS_DISPLAY_VALUE = {
-    "elevated": "Polygenic Risk Classification: Elevated",
-    "moderately_elevated": "Polygenic Risk Classification: Moderately Elevated",
-    "moderately elevated": "Polygenic Risk Classification: Moderately Elevated",
+    "elevated": "Polygenic Risk Classification",
+    "moderately_elevated": "Polygenic Risk Classification",
+    "moderately elevated": "Polygenic Risk Classification",
 }
 
 def get_triggering_prs(condition_name, genetics):
