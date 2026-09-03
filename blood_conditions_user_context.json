@@ -5,8 +5,21 @@
   "Asthma": {
     "family_history": null
   },
-  "Atopic Dermatitis": {
-    "family_history": null
+  "Atopic Dermatitis/Eczema": {
+    "family_history": [
+      "Asthma",
+      "Allergic rhinitis",
+      "Atopic dermatitis",
+      "Eczema"
+    ],
+    "symptoms": [
+      "Chronic or relapsing itching (pruritus)",
+      "Erythematous (red) skin lesions",
+      "Lichenified skin (thickened, leathery patches)",
+      "Lesions in flexural areas (elbow creases, behind knees)",
+      "Dry skin",
+      "Sleep-disrupting itch"
+    ]
   },
   "COPD": {
     "family_history": null
@@ -18,10 +31,32 @@
     "family_history": null
   },
   "IBD": {
-    "family_history": null
+    "family_history": [
+      "Inflammatory bowel disease"
+    ],
+    "symptoms": [
+      "Chronic or relapsing diarrhea",
+      "Abdominal pain",
+      "Weight loss",
+      "Fatigue",
+      "Rectal bleeding",
+      "Joint pain or arthritis",
+      "Skin inflammation",
+      "Eye inflammation"
+    ]
   },
   "NAFLD": {
-    "family_history": null
+    "family_history": [
+      "Obesity",
+      "Type 2 diabetes",
+      "Dyslipidemia",
+      "Hypertension",
+      "Metabolic syndrome"
+    ],
+    "symptoms": [
+      "Fatigue",
+      "Right upper-quadrant discomfort"
+    ]
   },
   "Osteoarthritis": {
     "family_history": null
@@ -36,10 +71,34 @@
     "family_history": null
   },
   "Rhinitis": {
-    "family_history": null
+    "family_history": [
+      "Allergic rhinitis",
+      "Asthma",
+      "Eczema"
+    ],
+    "symptoms": [
+      "Recurrent sneezing",
+      "Nasal itching",
+      "Rhinorrhea (runny nose)",
+      "Nasal congestion",
+      "Postnasal drip",
+      "Itchy, watery eyes"
+    ]
   },
   "Type 2 Diabetes": {
-    "family_history": null
+    "family_history": [
+      "Type 2 diabetes",
+      "Obesity",
+      "Metabolic syndrome"
+    ],
+    "symptoms": [
+      "Polyuria (frequent urination)",
+      "Polydipsia (excessive thirst)",
+      "Fatigue",
+      "Blurred vision",
+      "Recurrent infections",
+      "Slow wound healing"
+    ]
   },
   "MODY": {
     "family_history": [
@@ -165,7 +224,7 @@
         "Hypercholesterolemia",
         "Premature heart disease",
         "Early heart attack",
-        "Sudden cardiac death"
+        "Cardiac arrest"
     ]
   },
   "Cardiomyopathy": {
@@ -178,7 +237,7 @@
     "family_history": [
         "Cardiomyopathy",
         "Heart failure",
-        "Sudden cardiac death"
+        "Cardiac arrest"
     ],
     "imaging_findings": [
         "Left or biventricular dilation with spherical remodeling",
@@ -216,7 +275,7 @@
     "family_history": [
         "Coronary artery disease",
         "Ischemic heart disease",
-        "Sudden cardiac death"
+        "Cardiac arrest"
     ]
   },
   "Familial Hypertriglyceridemia": {
