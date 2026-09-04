@@ -1,9 +1,37 @@
 {
   "Alzheimer's Disease": {
-    "family_history": null
+    "family_history": [
+      "Alzheimer's disease",
+      "APOE-e4",
+      "APP mutation",
+      "PSEN1 mutation",
+      "PSEN2 mutation"
+    ],
+    "symptoms": [
+      "Progressive memory loss for recent events",
+      "Disorientation in time and place",
+      "Difficulty managing tasks and finances",
+      "Language problems",
+      "Visuospatial problems",
+      "Personality or mood change",
+      "Loss of walking, speaking, and swallowing"
+    ]
   },
   "Asthma": {
-    "family_history": null
+    "family_history": [
+      "Asthma",
+      "Allergic rhinitis",
+      "Eczema",
+      "Allergic conjunctivitis"
+    ],
+    "symptoms": [
+      "Recurrent cough",
+      "Wheeze",
+      "Shortness of breath",
+      "Chest tightness",
+      "Nocturnal symptoms",
+      "Allergen, infection, exercise or cold air driven attacks"
+    ]
   },
   "Atopic Dermatitis/Eczema": {
     "family_history": [
@@ -22,13 +50,54 @@
     ]
   },
   "COPD": {
-    "family_history": null
+    "family_history": [
+      "COPD",
+      "Early emphysema"
+    ],
+    "symptoms": [
+      "Exertional dyspnea (progressive)",
+      "Chronic productive cough",
+      "Wheezing",
+      "Chest tightness",
+      "Frequent respiratory infections",
+      "Fatigue"
+    ]
   },
   "Hyperthyroidism": {
-    "family_history": null
+    "family_history": [
+      "Graves' disease",
+      "Hashimoto's disease",
+      "Autoimmune thyroid disease",
+      "Thyroid nodules"
+    ],
+    "symptoms": [
+      "Unintentional weight loss",
+      "Heat intolerance",
+      "Palpitations",
+      "Tremor",
+      "Anxiety",
+      "Insomnia",
+      "Increased sweating",
+      "Goiter",
+      "Eye signs (ophthalmopathy)"
+    ]
   },
   "Hypothyroidism": {
-    "family_history": null
+    "family_history": [
+      "Autoimmune thyroiditis",
+      "Autoimmune disease",
+      "Thyroid dysfunction"
+    ],
+    "symptoms": [
+      "Fatigue",
+      "Cold intolerance",
+      "Weight gain",
+      "Dry skin",
+      "Constipation",
+      "Menstrual irregularities",
+      "Bradycardia",
+      "Cognitive slowing"
+    ]
   },
   "IBD": {
     "family_history": [
@@ -59,16 +128,60 @@
     ]
   },
   "Osteoarthritis": {
-    "family_history": null
+    "family_history": [
+      "Osteoarthritis"
+    ],
+    "symptoms": [
+      "Joint pain with use",
+      "Morning or start-up stiffness",
+      "Reduced range of motion",
+      "Crepitus",
+      "Joint swelling",
+      "Bony enlargement"
+    ]
   },
   "Parkinson's Disease": {
-    "family_history": null
+    "family_history": [
+      "Parkinson's disease"
+    ],
+    "symptoms": [
+      "Resting tremor",
+      "Bradykinesia",
+      "Muscular rigidity",
+      "Postural instability",
+      "Reduced facial expression",
+      "Small-step gait",
+      "Constipation",
+      "Sleep disturbance",
+      "Anosmia"
+    ]
   },
   "Psoriasis": {
-    "family_history": null
+    "family_history": [
+      "Psoriasis",
+      "Psoriatic arthritis"
+    ],
+    "symptoms": [
+      "Erythematous plaques with silvery scale",
+      "Nail pitting",
+      "Onycholysis",
+      "Inflammatory arthritis"
+    ]
   },
   "Rheumatoid Arthritis": {
-    "family_history": null
+    "family_history": [
+      "Rheumatoid arthritis",
+      "Autoimmune disease"
+    ],
+    "symptoms": [
+      "Symmetric inflammatory polyarthritis of small joints",
+      "Morning stiffness >30 minutes",
+      "Joint swelling",
+      "Joint pain",
+      "Nodules",
+      "Lung involvement",
+      "Eye involvement"
+    ]
   },
   "Rhinitis": {
     "family_history": [
@@ -106,25 +219,6 @@
         "Diabetes mellitus",
         "Early-onset diabetes",
         "Juvenile diabetes"
-    ]
-  },
-  "MEN4": {
-    "family_history": [
-        "Multiple endocrine neoplasia type 4",
-        "MEN4",
-        "CDKN1B mutation",
-        "Multiple endocrine neoplasia type 1",
-        "MEN1"
-    ],
-    "endocrine_conditions": [
-        "Pituitary adenoma",
-        "Acromegaly",
-        "Cushing disease",
-        "Pancreatic neuroendocrine tumor",
-        "Duodenal neuroendocrine tumor",
-        "Zollinger-Ellison syndrome",
-        "Carcinoid tumor",
-        "Adrenal adenoma"
     ]
   },
   "Muscular Dystrophy": {
@@ -192,30 +286,6 @@
         "Osteoarthritis",
         "Osteoporosis",
         "Hypothyroidism"
-    ]
-  },
-  "Celiac Disease": {
-    "symptoms": [
-        "Fatigue",
-        "Abdominal discomfort",
-        "Diarrhea",
-        "Bloating",
-        "Constipation",
-        "Early menopause",
-        "Abnormal periods",
-        "Weight loss"
-    ],
-    "family_history": [
-        "Celiac disease",
-        "Dermatitis herpetiformis",
-        "Autoimmune thyroid disease",
-        "Abdominal distension"
-    ],
-    "past_history": [
-        "Anemia",
-        "Osteoporosis",
-        "Autoimmune thyroid disease",
-        "Dermatitis herpetiformis"
     ]
   },
   "Familial Hypercholesterolemia": {
@@ -291,14 +361,6 @@
         "Low HDL cholesterol",
         "Hypoalphalipoproteinemia",
         "Tangier disease",
-        "Premature coronary artery disease"
-    ]
-  },
-  "Elevated APOB": {
-    "family_history": [
-        "Elevated apolipoprotein b",
-        "Hyperapobetalipoproteinemia",
-        "Familial combined hyperlipidemia",
         "Premature coronary artery disease"
     ]
   },
