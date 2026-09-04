@@ -46,7 +46,9 @@ def evaluate_<condition>(labs, patient, genetics, family_history, symptoms=False
         "Category": category
     }]
 ```
+
 `GENE_NOT_FOUND` is set to `"Typical"` — meaning a condition whose gene/PRS gate never opened is labeled the same as a true "nothing to act on" result, since neither lab nor context data was ever checked for it.
+
 ---
 
 ## Gene Gate: Monogenic Flag OR Polygenic (PRS) Elevation
