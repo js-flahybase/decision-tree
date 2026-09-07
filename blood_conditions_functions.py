@@ -241,7 +241,7 @@ TSH_SUPPRESSED = 0.54                 # mIU/L
 TSH_ELEVATED = 5.4                    # mIU/L
 TSH_ELEVATED_RANGE = (5.4, 10.0)      # mIU/L
 FREE_T4_RANGE = (0.8, 1.8)            # ng/dL
-FREE_T3_ELEVATED = 3.97               # pg/mL
+FREE_T3_RANGE = (0.91, 3.97)          # pg/mL
 TPOAB_UPPER_NORMAL = 5.61             # IU/mL
 
 # --- Iron studies (HFE) ---
@@ -715,15 +715,29 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, symptoms=F
     # elif tsh_borederline_suppressed:
     #     note(triggered, "tsh", tsh, True, f"<{TSH_BORDERLINE}")
 
-    free_t3_flag = note(triggered, "free_t3", free_t3, is_above(free_t3, FREE_T3_ELEVATED), f">{FREE_T3_ELEVATED}")
-    free_t4_flag = note(triggered, "free_t4", free_t4, is_above(free_t4, FREE_T4_RANGE[1]), f">{FREE_T4_RANGE[1]}")
+    free_t3_flag = is_above(free_t3, FREE_T3_RANGE[1])
+    free_t3_normal = free_t3 is not None and FREE_T3_RANGE[0] <= free_t3 <= FREE_T3_RANGE[1]
+    free_t4_flag = is_above(free_t4, FREE_T4_RANGE[1])
+    free_t4_normal = free_t4 is not None and FREE_T4_RANGE[0] <= free_t4 <= FREE_T4_RANGE[1]
+
+    if free_t3_flag:
+        note(triggered, "free_t3", free_t3, True, f">{FREE_T3_RANGE[1]}")
+    elif free_t3_normal:
+        note(triggered, "free_t3", free_t3, True, f"({FREE_T3_RANGE[0]}-{FREE_T3_RANGE[1]})")
+
+    if free_t4_flag:
+        note(triggered, "free_t4", free_t4, True, f">{FREE_T4_RANGE[1]}")
+    elif free_t4_normal:
+        note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
+
     hormone_flag = free_t3_flag or free_t4_flag
+    hormone_normal = free_t3_normal and free_t4_normal 
 
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
     if (tsh_suppressed and hormone_flag and tpoab_flag) or (tsh_suppressed and hormone_flag and tpoab_flag and (symptoms or family_history)):
         category = "Significant Pattern"
-    elif tsh_suppressed and ((not hormone_flag) or tpoab_flag):
+    elif tsh_suppressed and (hormone_normal or tpoab_flag):
         category = "Early Pattern"
     else:
         category = "Elevated susceptibility"
@@ -753,13 +767,19 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=Fa
     elif tsh_mild:
         note(triggered, "tsh", tsh, True, f"({TSH_ELEVATED_RANGE[0]}-{TSH_ELEVATED_RANGE[1]}]")
     # free_t3_flag = note(triggered, "free_t3", free_t3, is_below(free_t3, FREE_T3_ELEVATED), f"<{FREE_T3_ELEVATED}") #unused in triggers
-    free_t4_flag = note(triggered, "free_t4", free_t4, is_below(free_t4, FREE_T4_RANGE[0]), f"<{FREE_T4_RANGE[0]}")
+    free_t4_flag = is_below(free_t4, FREE_T4_RANGE[0])
+    free_t4_normal = free_t4 is not None and FREE_T4_RANGE[0] <= free_t4 <= FREE_T4_RANGE[1]
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
+
+    if free_t4_flag:
+        note(triggered, "free_t4", free_t4, True, f"<{FREE_T4_RANGE[0]}")
+    elif free_t4_normal:
+        note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
 
     if (tsh_high and free_t4_flag and tpoab_flag) or (tsh_high and free_t4_flag and tpoab_flag and (symptoms or family_history)):
         category = "Significant Pattern"
     # tsh_mild and tpoab_flag case covers early pattern w/o user context
-    elif tsh_mild and (tpoab_flag or (not free_t4_flag)):
+    elif tsh_mild and (tpoab_flag or free_t4_normal):
         category = "Early Pattern"
     else:
         category = "Elevated susceptibility"
@@ -1258,14 +1278,36 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
         is_elevated(lpa, LPA_ELEVATED)
     )
 
-    if elevated_likely:
-        ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_ELEVATED), f">{LDL_C_ELEVATED}")
-        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}")
-        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
-    elif elevated_early:
-        ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_AT_RISK), f">{LDL_C_AT_RISK}")
-        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_ELEVATED), f">{NON_HDL_C_ELEVATED}")
-        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
+    # changed for noting mild crossed values as well if significant is already triggered by another marker (for flahyAI and GP reporting)
+    ldl_likely_flag = is_above(ldl, LDL_C_ELEVATED)
+    ldl_early_flag = is_above(ldl, LDL_C_AT_RISK)
+    if ldl_likely_flag:
+        note(triggered, "ldl_c", ldl, True, f">{LDL_C_ELEVATED}")
+    elif ldl_early_flag:
+        note(triggered, "ldl_c", ldl, True, f">{LDL_C_AT_RISK}")
+
+    non_hdl_likely_flag = is_above(non_hdl, NON_HDL_C_SEVERE)
+    non_hdl_early_flag = is_above(non_hdl, NON_HDL_C_ELEVATED)
+    if non_hdl_likely_flag:
+        note(triggered, "non_hdl_c", non_hdl, True, f">{NON_HDL_C_SEVERE}")
+    elif non_hdl_early_flag:
+        note(triggered, "non_hdl_c", non_hdl, True, f">{NON_HDL_C_ELEVATED}")
+
+    lpa_likely_flag = is_elevated(lpa, LPA_ELEVATED)
+    lpa_early_flag = is_elevated(lpa, LPA_AT_RISK)
+    if lpa_likely_flag:
+        note(triggered, "lpa", lpa, True, f">={LPA_ELEVATED}")
+    elif lpa_early_flag:
+        note(triggered, "lpa", lpa, True, f">={LPA_AT_RISK}")
+
+    # if elevated_likely:
+    #     ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_ELEVATED), f">{LDL_C_ELEVATED}")
+    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}")
+    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
+    # elif elevated_early:
+    #     ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_AT_RISK), f">{LDL_C_AT_RISK}")
+    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_ELEVATED), f">{NON_HDL_C_ELEVATED}")
+    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
 
     if elevated_likely or (elevated_early and age is not None and age < 40) or (elevated_early and family_history):
         category = "Significant Pattern"
@@ -1376,16 +1418,47 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
         is_elevated(apob, APOB_ELEVATED) or
         is_elevated(lpa, LPA_ELEVATED)
     )
-    if ldl_high:
-        ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}")
-        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_SEVERE), f">={NON_HDL_C_SEVERE}")
-        apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_ELEVATED), f">={APOB_ELEVATED}")
-        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
-    elif ldl_moderate:
-        ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
-        non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_ELEVATED), f">={NON_HDL_C_ELEVATED}")
-        apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_AT_RISK), f">={APOB_AT_RISK}")
-        lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
+
+    # changed for noting mild crossed values as well if significant is already triggered by another marker (for flahyAI and GP reporting)
+    ldl_likely_flag = is_elevated(ldl, LDL_C_ELEVATED)
+    ldl_early_flag = is_elevated(ldl, LDL_C_AT_RISK)
+    if ldl_likely_flag:
+        note(triggered, "ldl_c", ldl, True, f">={LDL_C_ELEVATED}")
+    elif ldl_early_flag:
+        note(triggered, "ldl_c", ldl, True, f">={LDL_C_AT_RISK}")
+
+    non_hdl_likely_flag = is_elevated(non_hdl, NON_HDL_C_SEVERE)
+    non_hdl_early_flag = is_elevated(non_hdl, NON_HDL_C_ELEVATED)
+    if non_hdl_likely_flag:
+        note(triggered, "non_hdl_c", non_hdl, True, f">={NON_HDL_C_SEVERE}")
+    elif non_hdl_early_flag:
+        note(triggered, "non_hdl_c", non_hdl, True, f">={NON_HDL_C_ELEVATED}")  
+
+    apob_likely_flag = is_elevated(apob, APOB_ELEVATED)
+    apob_early_flag = is_elevated(apob, APOB_AT_RISK)
+    if apob_likely_flag:
+        note(triggered, "apob", apob, True, f">={APOB_ELEVATED}")
+    elif apob_early_flag:
+        note(triggered, "apob", apob, True, f">={APOB_AT_RISK}")
+
+    lpa_likely_flag = is_elevated(lpa, LPA_ELEVATED)
+    lpa_early_flag = is_elevated(lpa, LPA_AT_RISK)
+    if lpa_likely_flag:
+        note(triggered, "lpa", lpa, True, f">={LPA_ELEVATED}")
+    elif lpa_early_flag:
+        note(triggered, "lpa", lpa, True, f">={LPA_AT_RISK}")
+
+
+    # if ldl_high:
+    #     ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}")
+    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_SEVERE), f">={NON_HDL_C_SEVERE}")
+    #     apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_ELEVATED), f">={APOB_ELEVATED}")
+    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
+    # elif ldl_moderate:
+    #     ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
+    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_ELEVATED), f">={NON_HDL_C_ELEVATED}")
+    #     apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_AT_RISK), f">={APOB_AT_RISK}")
+    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
 
     low_hdl = note(triggered, "hdl_c", hdl, is_below(hdl, hdl_min), f"<{hdl_min}")
     tg_moderate = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
@@ -1649,26 +1722,26 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
     ggt = labs.get("ggt")
 
     triggered = []
+
+    total_bilirubin_flag = note(triggered, "total_bilirubin", total_bilirubin, is_above(total_bilirubin, TOTAL_BILIRUBIN_RANGE[0]), f">{TOTAL_BILIRUBIN_RANGE[0]}")
+    direct_bilirubin_flag = note(triggered, "direct_bilirubin", direct_bilirubin, is_above(direct_bilirubin, DIRECT_BILIRUBIN_LOWER), f">{DIRECT_BILIRUBIN_LOWER}")
+    indirect_bilirubin_flag = note(triggered, "indirect_bilirubin", indirect_bilirubin, indirect_bilirubin is not None and indirect_bilirubin < INDIRECT_BILIRUBIN_UPPER, f"<{INDIRECT_BILIRUBIN_UPPER}")
+    alt_normal = note(triggered, "alt", alt, is_below(alt, 41), "<=41")
+    ast_normal = note(triggered, "ast", ast, is_below(ast, 35), "<=35")
+    alp_normal = note(triggered, "alp", alp, is_elevated(alp, ALP_RANGE[0]) and is_below(alp, ALP_RANGE[1]), f"({ALP_RANGE[0]}-{ALP_RANGE[1]}]")
+    ggt_normal = note(triggered, "ggt", ggt, is_above(ggt, GGT_LFT_RANGE[0]) and is_below(ggt, GGT_LFT_RANGE[1]), f"({GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}]")
+
+    # noting down logic updated, all 7 individually noted down if triggered accordingly
+    # trigger logic unchanged — all 7 must be True together
     parameter = (
-        is_above(total_bilirubin, TOTAL_BILIRUBIN_RANGE[0]) and
-        is_above(direct_bilirubin, DIRECT_BILIRUBIN_LOWER) and
-        (indirect_bilirubin < INDIRECT_BILIRUBIN_UPPER) and
-        is_below(alt, 41) and
-        is_below(ast, 35) and
-        is_elevated(alp, ALP_RANGE[0]) and is_below(alp, ALP_RANGE[1]) and
-        is_above(ggt, GGT_LFT_RANGE[0]) and is_below(ggt, GGT_LFT_RANGE[1])
+        total_bilirubin_flag and
+        direct_bilirubin_flag and
+        indirect_bilirubin_flag and
+        alt_normal and
+        ast_normal and
+        alp_normal and
+        ggt_normal
     )
-    # all 7 sub-checks are AND'd into a single pattern, so only record them once the
-    # whole pattern is confirmed true — otherwise a false prefix would leave misleading
-    # partial entries in `triggered` for a pattern that didn't actually fire
-    if parameter:
-        triggered.append(f"total_bilirubin={total_bilirubin} (>{TOTAL_BILIRUBIN_RANGE[0]})")
-        triggered.append(f"direct_bilirubin={direct_bilirubin} (>{DIRECT_BILIRUBIN_LOWER})")
-        triggered.append(f"indirect_bilirubin={indirect_bilirubin} (<{INDIRECT_BILIRUBIN_UPPER})")
-        triggered.append(f"alt={alt} (<=41)")
-        triggered.append(f"ast={ast} (<=35)")
-        triggered.append(f"alp={alp} ({ALP_RANGE[0]}-{ALP_RANGE[1]}]")
-        triggered.append(f"ggt={ggt} ({GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}]")
 
     if (
         (parameter and family_history and symptoms and past_history) or
@@ -1920,7 +1993,7 @@ for r in results:
     entry["Triggering PRS"] = get_triggering_prs(entry["Condition"], data["genetics"])
     entry["Snapshot Category"] = get_snapshot_category(entry["Condition"], entry["Category"], data["genetics"])
     
-    # entry["All Blood Marker(s)"] = entry.get("Blood Marker(s)", "") #uncomment this when want to include all threshold crossing markers (regardless of trigger category)
+    entry["All Blood Marker(s)"] = entry.get("Blood Marker(s)", "") #uncomment this when want to include all threshold crossing markers (regardless of trigger category)
     if entry.get("Category") not in PATTERN_CATEGORIES_INDICATING_TRIGGER:
         entry["Blood Marker(s)"] = ""
 
@@ -1932,7 +2005,7 @@ active_findings = [
 
 # Add "All Blood Marker(s)" to output csv when required all markers which crossed thresholds.
 with open(args.output_csv, "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category"])
+    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)"])
     writer.writeheader()
     writer.writerows(active_findings)
 
