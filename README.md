@@ -73,6 +73,7 @@ Each result includes these columns:
 - **Blood Marker(s)** — which specific lab values crossed a threshold to support `Category` assignment, and by how much (e.g. `crp=3.2 (>=3.0)`)
 - **Triggering PRS** — Shown when the condition's PRS category is `elevated` or `moderately_elevated` and contributed to passing the gate
 - **Snapshot Category** — A plain-language recommendation: `To discuss with General Practitioner`, `Worth acting on for prevention`, or `Typical - nothing to act on`
+- **All Blood Marker(s)** — All relevant lab values with crossed a threshold, regardless of if they supported a `Category` assignment. This column is for GP's informative context.
 
 This makes it possible to see *why* a category was reached, not just the final result.
 
