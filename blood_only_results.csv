@@ -7,4 +7,5 @@ Respiratory Health,Rhinitis,Typical,,,,Typical - nothing to act on,
 Digestive Health,NAFLD,Typical,,,,Typical - nothing to act on,"alt=48.0 (>30), ggt=70.0 (>64), triglycerides=260.0 (>=150), hba1c=6.9 (>=6.5), non_hdl_c=235.0 (>160)"
 Digestive Health,Inflammatory Bowel Disease,Typical,,,,Typical - nothing to act on,"esr=35.0 (>30), lmr=6.284 (>2.5)"
 Digestive Health,Hereditary Hemochromatosis,Significant Pattern,,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)",,To discuss with General Practitioner,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)"
-Skin Health,Atopic Dermatitis/Eczema,Typical,,,,Typical - nothing to act on, eosinophils=9.0 (>=1.5)
+Skin Health,Eczema,Typical,,,,Typical - nothing to act on,eosinophils=9.0 (>=1.5)
+Skin Health,Atopic Dermatitis,Typical,,,,Typical - nothing to act on,eosinophils=9.0 (>=1.5)

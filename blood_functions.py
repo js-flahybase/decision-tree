@@ -62,7 +62,8 @@ CONDITION_DOMAINS = {
     "NAFLD": "Digestive Health",
     "Inflammatory Bowel Disease": "Digestive Health",
     "Hereditary Hemochromatosis": "Digestive Health",
-    "Atopic Dermatitis/Eczema": "Skin Health",
+    "Eczema": "Skin Health",
+    "Atopic Dermatitis": "Skin Health",
 }
 
 
@@ -869,7 +870,7 @@ def evaluate_eczema(labs, patient):
         _track(partial_triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
         
     return [{
-        "Condition": "Atopic Dermatitis/Eczema",
+        "Condition": "Eczema",
         "Category": category,
         "Values": _fmt_values(eosinophils=eosinophils, ige=ige, crp=crp, esr=esr),
         "TriggeredValues": ", ".join(triggered),
@@ -877,42 +878,43 @@ def evaluate_eczema(labs, patient):
     }]
 
 
-# def evaluate_atopic_dermatitis(labs, patient):
-#     # 2. Pull values from labs / patient
-#     eosinophils = labs.get("eosinophils")
-#     ige = labs.get("ige")
-#     crp = labs.get("crp")
-#     esr = labs.get("esr")
+def evaluate_atopic_dermatitis(labs, patient):
+# 2. Pull values from labs / patient
+    eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
+    crp = labs.get("crp")
+    esr = labs.get("esr")
 
-#     # 3. Check if values are abnormal
-#     eos_flag = is_elevated(eosinophils, THRESHOLDS["eosinophils_high_eczema"])
-#     ige_flag = is_above(ige, THRESHOLDS["ige_high_eczema"])
-#     crp_flag = is_above(crp, THRESHOLDS["crp_high_skin"])
-#     esr_flag = is_above(esr, THRESHOLDS["esr_high_eczema"])
+    # 3. Check if values are abnormal
+    eos_flag = is_elevated(eosinophils, THRESHOLDS["eosinophils_high_eczema"])
+    ige_flag = is_above(ige, THRESHOLDS["ige_high_eczema"])
+    crp_flag = is_above(crp, THRESHOLDS["crp_high_skin"])
+    esr_flag = is_above(esr, THRESHOLDS["esr_high_eczema"])
 
-#     # 4. Decide category
-#     triggered = []
-#     partial_triggered = []
-#     if eos_flag and ige_flag and crp_flag and esr_flag:
-#         category = "Significant Pattern"
-#         _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
-#         _track(triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
-#         _track(triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
-#         _track(triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
-#     else:
-#         category = "Typical"
-#         _track(partial_triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
-#         _track(partial_triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
-#         _track(partial_triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
-#         _track(partial_triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if eos_flag and ige_flag and crp_flag and esr_flag:
+        category = "Significant Pattern"
+        _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
+        _track(triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
+        _track(triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
+        _track(partial_triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
+        _track(partial_triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
+        _track(partial_triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
+        
+    return [{
+        "Condition": "Atopic Dermatitis",
+        "Category": category,
+        "Values": _fmt_values(eosinophils=eosinophils, ige=ige, crp=crp, esr=esr),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
 
-#     return [{
-#         "Condition": "Atopic Dermatitis",
-#         "Category": category,
-#         "Values": _fmt_values(eosinophils=eosinophils, ige=ige, crp=crp, esr=esr),
-#         "TriggeredValues": ", ".join(triggered),
-#         "PartialTriggered": ", ".join(partial_triggered)
-#     }]
 
 
 # ---------------------------------------------------------------------------
@@ -931,7 +933,7 @@ EVALUATORS = [
     evaluate_inflammatory_bowel_disease,
     evaluate_hereditary_hemochromatosis,
     evaluate_eczema,
-    # evaluate_atopic_dermatitis,
+    evaluate_atopic_dermatitis,
 ]
 
 
