@@ -1,0 +1,26 @@
+Domain,Condition,Category,DNA Marker(s),Blood Marker(s),Triggering PRS,Snapshot Category,All Blood Marker(s)
+Brain Health,Alzheimer's Disease,Typical,,,,Typical - nothing to act on,
+Respiratory Health,Asthma,Typical,,,,Typical - nothing to act on,eosinophils=9.0 (>=0.5)
+Skin Health,Atopic Dermatitis/Eczema,Significant Pattern,,eosinophils=9.0 (>0.42),Polygenic Risk Classification,To discuss with General Practitioner,eosinophils=9.0 (>0.42)
+Respiratory Health,COPD,Typical,,,,Typical - nothing to act on,
+Endocrine Health,Hyperthyroidism,Elevated susceptibility,CTLA4,,,Worth acting on for prevention,"tsh=0.15 (<0.54), free_t3=5.2 (>3.97), free_t4=2.1 (>1.8)"
+Endocrine Health,Hypothyroidism,Elevated susceptibility,CTLA4,,,Worth acting on for prevention,
+Digestive Health,Inflammatory Bowel Disease,Early Pattern,,crp=4.5 (>3.0),Polygenic Risk Classification,To discuss with General Practitioner,crp=4.5 (>3.0)
+Digestive Health,NAFLD,Early Pattern,,"ast=48.0 (>31), alt=65.0 (>31), ggt=70.0 (>36)",Polygenic Risk Classification,To discuss with General Practitioner,"ast=48.0 (>31), alt=65.0 (>31), ggt=70.0 (>36)"
+Joints Health,Osteoarthritis,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,
+Brain Health,Parkinson's Disease,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), crp=4.5 (>3.0)"
+Skin Health,Psoriasis,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,"esr=35.0 (>20), crp=4.5 (>3.0)"
+Immune Health,Rheumatoid Arthritis,Significant Pattern,CTLA4,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), esr=35.0 (>20), crp=4.5 (>3.0)",,To discuss with General Practitioner,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), esr=35.0 (>20), crp=4.5 (>3.0)"
+Respiratory Health,Rhinitis,Early Pattern,,eosinophils=9.0 (>0.4),Polygenic Risk Classification,To discuss with General Practitioner,eosinophils=9.0 (>0.4)
+Endocrine Health,Type 2 Diabetes,Typical,,,,Typical - nothing to act on,
+Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothing to act on,"fasting_glucose=118.0 (>=99), hba1c=6.9 (>=6.5)"
+Muscle Health,Muscular Dystrophy,Typical,,,,Typical - nothing to act on,
+Kidney & Metabolic Health,Gilbert Syndrome,Typical,,,,Typical - nothing to act on,
+Digestive Health,Hereditary Hemochromatosis,Significant Pattern,,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)",,To discuss with General Practitioner,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)"
+Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Typical - nothing to act on,
+Cardiac Health,Cardiomyopathy,Typical,,,,Typical - nothing to act on,
+Cardiac Health,Coronary Artery Disease,Significant Pattern,,"ldl_c=205.0 (>=160), non_hdl_c=235.0 (>=190), apob=145.0 (>=130), lpa=65.0 (>=50), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)",Polygenic Risk Classification,To discuss with General Practitioner,"ldl_c=205.0 (>=160), non_hdl_c=235.0 (>=190), apob=145.0 (>=130), lpa=65.0 (>=50), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)"
+Cardiac Health,Familial Hypertriglyceridemia,Typical,,,,Typical - nothing to act on,
+Cardiac Health,HDL Deficiency,Typical,,,,Typical - nothing to act on,
+Cancer,Li-Fraumeni Syndrome,Typical,,,,Typical - nothing to act on,
+Cancer,PTEN Hamartoma Tumor Syndrome,Typical,,,,Typical - nothing to act on,
