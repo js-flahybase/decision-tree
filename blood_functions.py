@@ -273,11 +273,11 @@ THRESHOLDS = {
 
 THRESHOLDS2 = {
     # Endocrine Health
-    "fasting_plasma_glucose_borderline_low": 110,
-    "fasting_plasma_glucose_borderline_high": 135,
-    "hba1c_borderline": 6.5,
-    "fasting_plasma_glucose_borderline_high_MODY": 99,
-    "hba1c_borderline_MODY": 5.6,
+    "fasting_plasma_glucose_borderline_low": 110,              # mg/dL
+    "fasting_plasma_glucose_borderline_high": 135,             # mg/dL
+    "hba1c_borderline": 6.5,                                   # %
+    "fasting_plasma_glucose_borderline_high_MODY": 99,         # mg/dL
+    "hba1c_borderline_MODY": 5.6,                              # %
     "tsh_borderline_hypothyroid": (4.0 , 10.0),
     "tsh_borderline_hyperthyroid": (0.1 , 0.4),
     "free_t4_range": (0.8, 1.8),
