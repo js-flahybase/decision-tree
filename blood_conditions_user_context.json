@@ -33,12 +33,11 @@
       "Allergen, infection, exercise or cold air driven attacks"
     ]
   },
-  "Atopic Dermatitis/Eczema": {
+  "Atopic Dermatitis": {
     "family_history": [
       "Asthma",
       "Allergic rhinitis",
-      "Atopic dermatitis",
-      "Eczema"
+      "Atopic dermatitis"
     ],
     "symptoms": [
       "Chronic or relapsing itching (pruritus)",
@@ -47,6 +46,23 @@
       "Lesions in flexural areas (elbow creases, behind knees)",
       "Dry skin",
       "Sleep-disrupting itch"
+    ]
+  },
+  "Eczema": {
+    "family_history": [
+      "Asthma",
+      "Allergic rhinitis",
+      "Eczema"
+    ],
+    "symptoms": [
+      "Pruritic (itchy) skin",
+      "Erythematous (red) skin lesions",
+      "Exudative (weeping) skin lesions",
+      "Lichenified skin (thickened, leathery patches)",
+      "Lesions on hands",
+      "Lesions in flexural areas",
+      "Lesions on exposed areas",
+      "Flares triggered by irritants, allergens or stress"
     ]
   },
   "COPD": {
