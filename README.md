@@ -156,7 +156,7 @@ Optional overrides (only needed if the blood CSV doesn't include `sex`/`age` row
 --sex {male, female} --age int(value)
 ```
 
-This runs all 25 condition functions against the supplied data and writes result to `output.csv`.
+This runs all 26 condition functions against the supplied data and writes result to `output.csv`.
 
 ---
 
