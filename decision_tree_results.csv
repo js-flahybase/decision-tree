@@ -1,7 +1,8 @@
 Domain,Condition,Category,DNA Marker(s),Blood Marker(s),Triggering PRS,Snapshot Category,All Blood Marker(s)
 Brain Health,Alzheimer's Disease,Typical,,,,Typical - nothing to act on,
 Respiratory Health,Asthma,Typical,,,,Typical - nothing to act on,
-Skin Health,Atopic Dermatitis/Eczema,Significant Pattern,,eosinophils=9.0 (>0.42),Polygenic Risk Classification,To discuss with General Practitioner,eosinophils=9.0 (>0.42)
+Skin Health,Atopic Dermatitis,Significant Pattern,,eosinophils=9.0 (>0.42),Polygenic Risk Classification,To discuss with General Practitioner,eosinophils=9.0 (>0.42)
+Skin Health,Eczema,Typical,,,,Typical - nothing to act on,
 Respiratory Health,COPD,Typical,,,,Typical - nothing to act on,
 Endocrine Health,Hyperthyroidism,Elevated susceptibility,CTLA4,,,Worth acting on for prevention,"tsh=0.15 (<0.54), free_t3=5.2 (>3.97), free_t4=2.1 (>1.8)"
 Endocrine Health,Hypothyroidism,Elevated susceptibility,CTLA4,,,Worth acting on for prevention,

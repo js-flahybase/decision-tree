@@ -81,8 +81,8 @@ PRS_CONDITION_KEY_MAP = {
     "alzheimers": "Alzheimer's Disease",
     "cad": "Coronary Artery Disease",
     "asthma": "Asthma",
-    "atopicdermatitis": "Atopic Dermatitis/Eczema",
-    "eczema": "Atopic Dermatitis/Eczema",
+    "atopicdermatitis": "Atopic Dermatitis",
+    "eczema": "Eczema",
     "copd": "COPD",
     "hyperthyroidism": "Hyperthyroidism",
     "hypothyroidism": "Hypothyroidism",
@@ -331,7 +331,8 @@ NO_GENE_GATE = "NO_GENE_GATE"
 CONDITION_GENES = {
     "Alzheimer's Disease": ["APOE"],
     "Asthma": ["IL13"],
-    "Atopic Dermatitis/Eczema": ["C11orf32/LRRC32", "TSLP", "IL13", "IL4R"],
+    "Atopic Dermatitis": ["C11orf32/LRRC32", "TSLP", "IL13", "IL4R"],
+    "Eczema": [], #no gene listed, only PRS gate
     "COPD": [],  # no gene listed, only PRS gate
     "Hyperthyroidism": ["CTLA4", "PTPN22"],
     "Hypothyroidism": ["CTLA4"],
@@ -626,10 +627,10 @@ def evaluate_asthma(labs, patient, genetics, family_history, symptoms=False):
     }]
 
 
-# Atopic Dermatitis/Eczema
+# Atopic Dermatitis
 def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, symptoms=False):
-    if not has_flagged_gene(genetics, "Atopic Dermatitis/Eczema"):
-        return [{"Condition": "Atopic Dermatitis/Eczema", "Category": GENE_NOT_FOUND}]
+    if not has_flagged_gene(genetics, "Atopic Dermatitis"):
+        return [{"Condition": "Atopic Dermatitis", "Category": GENE_NOT_FOUND}]
 
     eosinophils = labs.get("eosinophils")
     triggered = []
@@ -649,8 +650,37 @@ def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, symptoms
         category = "Elevated susceptibility"
 
     return [{
-        "Condition": "Atopic Dermatitis/Eczema", "Category": category,
-        "DNA Marker(s)": get_gene_trigger(genetics, "Atopic Dermatitis/Eczema"),
+        "Condition": "Atopic Dermatitis", "Category": category,
+        "DNA Marker(s)": get_gene_trigger(genetics, "Atopic Dermatitis"),
+        "Blood Marker(s)": ", ".join(triggered),
+    }]
+
+
+# Eczema
+def evaluate_eczema(labs, patient, genetics, family_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Eczema"):
+        return [{"Condition": "Eczema", "Category": GENE_NOT_FOUND}]
+
+    eosinophils = labs.get("eosinophils")
+    triggered = []
+
+    eosinophil_likely = is_above(eosinophils, EOSINOPHILS_LIKELY)
+    eosinophil_early = is_elevated(eosinophils, EOSINOPHILS_BORDERLINE) #and not is_above(eosinophils, EOSINOPHILS_LIKELY)
+    if eosinophil_likely:
+        note(triggered, "eosinophils", eosinophils, True, f">{EOSINOPHILS_LIKELY}")
+    elif eosinophil_early:
+        note(triggered, "eosinophils", eosinophils, True, f">={EOSINOPHILS_BORDERLINE}")
+
+    if eosinophil_likely or (eosinophil_likely and (symptoms or family_history)):
+        category = "Significant Pattern"
+    elif eosinophil_early:
+        category = "Early Pattern"
+    else:
+        category = "Elevated susceptibility"
+
+    return [{
+        "Condition": "Eczema", "Category": category,
+        "DNA Marker(s)": get_gene_trigger(genetics, "Eczema"),
         "Blood Marker(s)": ", ".join(triggered),
     }]
 
@@ -1852,6 +1882,10 @@ results = [
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
         family_history=False,
     ),
+    evaluate_eczema(
+        labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
+        family_history=False,
+    ),
     evaluate_copd(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
         family_history=False,
@@ -1960,7 +1994,8 @@ results = [
 CONDITION_DOMAINS = {
     "Alzheimer's Disease": "Brain Health",
     "Asthma": "Respiratory Health",
-    "Atopic Dermatitis/Eczema": "Skin Health",
+    "Atopic Dermatitis": "Skin Health",
+    "Eczema": "Skin Health",
     "COPD": "Respiratory Health",
     "Hyperthyroidism": "Endocrine Health",
     "Hypothyroidism": "Endocrine Health",
