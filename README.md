@@ -93,11 +93,11 @@ This makes it possible to see *why* a category was reached, not just the final r
 ```python
 Patient: {'sex': {'male','female'}, 'age': int(value)}
 Genetics: {
-    'flagged_genes': [...],            # from the monogenic JSON + APOE (if ε4 present)
+    'flagged_genes': [...],              # from the monogenic JSON + APOE (if ε4 present)
     'acmg_genes': [...],                 # subset of flagged_genes also listed as ACMG-actionable
-    'prs_elevated_conditions': {...},  # set of condition keys from the PRS JSON where category is elevated
+    'prs_elevated_conditions': {...},    # set of condition keys from the PRS JSON where category is elevated
     'prs_categories': {...},             # raw PRS category string per condition key
-    'apoe_status': "e3/e4",            # raw APOE genotype string
+    'apoe_status': "e3/e4",              # raw APOE genotype string
 }
 Labs : {'Blood parameter': value}
 ```
