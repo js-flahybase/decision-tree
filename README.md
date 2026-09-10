@@ -101,7 +101,7 @@ Genetics: {
 }
 Labs : {'Blood parameter': value}
 ```
-These dicts are built once per patient by `build_genetics_from_jsons(...)`, not assembled inside each function.
+These dicts are built once per patient by `load_patient_data(...)` and `build_genetics_from_jsons(...)`, not assembled inside each function.
 
 ---
  
