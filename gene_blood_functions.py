@@ -345,11 +345,11 @@ CONDITION_GENES = {
     "Rhinitis": ["TSLP"],
     "Type 2 Diabetes": ["TCF7L2", "SLC30A8"],#------------------------------------------------------------------
     "Maturity-Onset Diabetes of the Young": ["HNF1A"],
-    "Multiple Endocrine Neoplasia Type 4": ["CDKN1B"],
+    # "Multiple Endocrine Neoplasia Type 4": ["CDKN1B"],
     "Muscular Dystrophy": ["DMD", "FKRP", "LMNA", "SGCA", "SGCB"],
     "Gilbert Syndrome": ["UGT1A1"],
     "Hereditary Hemochromatosis": ["HFE"],
-    "Celiac Disease": ["HLA-DQ2", "HLA-DQ8"],
+    # "Celiac Disease": ["HLA-DQ2", "HLA-DQ8"],
     "Familial Hypercholesterolemia": ["LDLR", "APOB", "PCSK9"],
     "Cardiomyopathy": [
         "ACTC1", "BAG3", "DES", "FLNC", "LMNA", "MYBPC3", "MYH7", "MYL2",
@@ -362,7 +362,7 @@ CONDITION_GENES = {
     ],
     "Familial Hypertriglyceridemia": ["CREB3L3", "LMF1", "LPL"],
     "HDL Deficiency": ["ABCA1", "LCAT", "APOA1"],
-    "Elevated Apolipoprotein B": ["APOB"],
+    # "Elevated Apolipoprotein B": ["APOB"],
     "Li-Fraumeni Syndrome": ["TP53"],
     "PTEN Hamartoma Tumor Syndrome": ["PTEN"],
 }
