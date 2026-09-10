@@ -89,17 +89,19 @@ This makes it possible to see *why* a category was reached, not just the final r
 | **APOE status** | APOE-specific JSON | Genotype string | `"e3/e4"` — contributes an `APOE` gene flag if an ε4 allele is present |
 | **Patient-reported context** (`family_history`, `symptoms`, `past_history`) | Asked to / reported by the patient | `True` / `False` | `family_history of Alzheimer's: True` |
 
-`genetics` (passed into every function) is a single dict combining all three genetic sources:
+`Patient`,`Genetics`, and `Labs` (passed into every function) in a dict format combining all three genetic sources and blood biomarkers values:
 ```python
-{
-    "flagged_genes": [...],            # from the monogenic JSON + APOE (if ε4 present)
-    "acmg_genes": [...],                 # subset of flagged_genes also listed as ACMG-actionable
-    "prs_elevated_conditions": {...},  # set of condition keys from the PRS JSON where category is elevated
-    "prs_categories": {...},             # raw PRS category string per condition key
-    "apoe_status": "e3/e4",            # raw APOE genotype string
+Patient: {'sex': {'male','female'}, 'age': int(value)}
+Genetics: {
+    'flagged_genes': [...],            # from the monogenic JSON + APOE (if ε4 present)
+    'acmg_genes': [...],                 # subset of flagged_genes also listed as ACMG-actionable
+    'prs_elevated_conditions': {...},  # set of condition keys from the PRS JSON where category is elevated
+    'prs_categories': {...},             # raw PRS category string per condition key
+    'apoe_status': "e3/e4",            # raw APOE genotype string
 }
+Labs : {'Blood parameter': value}
 ```
-This dict is built once per patient by `build_genetics_from_jsons(...)`, not assembled inside each function.
+These dicts are built once per patient by `build_genetics_from_jsons(...)`, not assembled inside each function.
 
 ---
  
