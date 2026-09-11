@@ -1330,15 +1330,6 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
     elif lpa_early_flag:
         note(triggered, "lpa", lpa, True, f">={LPA_AT_RISK}")
 
-    # if elevated_likely:
-    #     ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_ELEVATED), f">{LDL_C_ELEVATED}")
-    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_SEVERE), f">{NON_HDL_C_SEVERE}")
-    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
-    # elif elevated_early:
-    #     ldl_flag = note(triggered, "ldl_c", ldl, is_above(ldl, LDL_C_AT_RISK), f">{LDL_C_AT_RISK}")
-    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_above(non_hdl, NON_HDL_C_ELEVATED), f">{NON_HDL_C_ELEVATED}")
-    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
-
     if elevated_likely or (elevated_early and age is not None and age < 40) or (elevated_early and family_history):
         category = "Significant Pattern"
     elif elevated_early or family_history:
@@ -1477,18 +1468,6 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
         note(triggered, "lpa", lpa, True, f">={LPA_ELEVATED}")
     elif lpa_early_flag:
         note(triggered, "lpa", lpa, True, f">={LPA_AT_RISK}")
-
-
-    # if ldl_high:
-    #     ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_ELEVATED), f">={LDL_C_ELEVATED}")
-    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_SEVERE), f">={NON_HDL_C_SEVERE}")
-    #     apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_ELEVATED), f">={APOB_ELEVATED}")
-    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_ELEVATED), f">={LPA_ELEVATED}")
-    # elif ldl_moderate:
-    #     ldl_flag = note(triggered, "ldl_c", ldl, is_elevated(ldl, LDL_C_AT_RISK), f">={LDL_C_AT_RISK}")
-    #     non_hdl_flag = note(triggered, "non_hdl_c", non_hdl, is_elevated(non_hdl, NON_HDL_C_ELEVATED), f">={NON_HDL_C_ELEVATED}")
-    #     apob_flag = note(triggered, "apob", apob, is_elevated(apob, APOB_AT_RISK), f">={APOB_AT_RISK}")
-    #     lpa_flag = note(triggered, "lpa", lpa, is_elevated(lpa, LPA_AT_RISK), f">={LPA_AT_RISK}")
 
     low_hdl = note(triggered, "hdl_c", hdl, is_below(hdl, hdl_min), f"<{hdl_min}")
     tg_moderate = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
@@ -2028,7 +2007,7 @@ for r in results:
     entry["Triggering PRS"] = get_triggering_prs(entry["Condition"], data["genetics"])
     entry["Snapshot Category"] = get_snapshot_category(entry["Condition"], entry["Category"], data["genetics"])
     
-    entry["All Blood Marker(s)"] = entry.get("Blood Marker(s)", "") #uncomment this when want to include all threshold crossing markers (regardless of trigger category)
+    entry["All Blood Marker(s)"] = entry.get("Blood Marker(s)", "")
     if entry.get("Category") not in PATTERN_CATEGORIES_INDICATING_TRIGGER:
         entry["Blood Marker(s)"] = ""
 
@@ -2038,7 +2017,6 @@ active_findings = [
     for r in results
 ]
 
-# Add "All Blood Marker(s)" to output csv when required all markers which crossed thresholds.
 with open(args.output_csv, "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)"])
     writer.writeheader()
