@@ -3,7 +3,7 @@ import json
 import csv
 
 # example run command:
-# python script.py monogenic.json prs.json apoe.json blood.csv results.csv --sex male --age 35
+# python script.py monogenic.json prs.json apoe.json blood.csv results.csv --thresholds thresholds_lab_a.json --sex male --age 35
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run genetic risk evaluation across all conditions")
@@ -14,7 +14,17 @@ if __name__ == "__main__":
     parser.add_argument("output_csv", help="Path to write the results CSV")
     parser.add_argument("--sex", required=False, choices=["male", "female"], default=None, help="Patient's biological sex (optional override on csv extracted value)") # making it optional override
     parser.add_argument("--age", required=False, type=int, default=None, help="Patient's age in years (optional override on csv extracted value)") #making it optional override
+    parser.add_argument("--thresholds", required=True, help="Path to the lab-specific reference-ranges/thresholds JSON") # added
     args = parser.parse_args()
+
+    # added: load the lab's thresholds JSON so the constants below reflect this lab's ranges
+    with open(args.thresholds) as f:
+        THRESHOLDS = json.load(f)
+
+def _t(key):  # added
+    """Looks up key in the loaded lab thresholds JSON, returning a tuple if the value is a list."""
+    value = THRESHOLDS[key]
+    return tuple(value) if isinstance(value, list) else value
 
 # loading the reference user-context json (can also be done using args (but since this doesn't change with samples, so hard-coded using))
 # with open("/home/azureuser/decision-tree/blood_conditions_user_context.json") as f:
@@ -163,44 +173,49 @@ SEX_VALUES = ["male", "female"]
 # GENETIC_RISK_CLASSIFICATIONS = ["Elevated", "Moderately Elevated", "Typical", "Not Reported"]
 # ELEVATED_CLASSIFICATIONS = {"Elevated", "Moderately Elevated"}
 
+# All values below are now read from THRESHOLDS (loaded from --thresholds JSON, or
+# thresholds_default.json) instead of being hardcoded, so a different lab's reference
+# ranges/thresholds can be swapped in via the CLI arg without touching this file or any
+# of the functions that use these names. # added
+
 # --- Lipid Profile ---
-TOTAL_CHOLESTEROL_AT_RISK = 200       # mg/dL
-TOTAL_CHOLESTEROL_ELEVATED = 240      # mg/dL
-LDL_C_NORMAL_CAD = 70                 # mg/dL, preferred ceiling if CAD susceptibility present
-LDL_C_AT_RISK = 130                   # mg/dL
-LDL_C_ELEVATED = 160                  # mg/dL
-LDL_C_SEVERE = 190                    # mg/dL
-HDL_C_MALE_MIN = 40                   # mg/dL
-HDL_C_FEMALE_MIN = 50                 # mg/dL
-HDL_C_MALE_SEVERE = 30                # mg/dL
-HDL_C_FEMALE_SEVERE = 35              # mg/dL
-NON_HDL_C_NORMAL = 130                # mg/dL
-NON_HDL_C_ELEVATED = 160              # mg/dL
-NON_HDL_C_SEVERE = 190                # mg/dL
-VLDL_UPPER_NORMAL = 38                # mg/dL
-TRIGLYCERIDES_AT_RISK = 150           # mg/dL
-TRIGLYCERIDES_ELEVATED = 200          # mg/dL
-TRIGLYCERIDES_SEVERE = 500            # mg/dL
-TRIGLYCERIDES_VERY_SEVERE = 1000      # mg/dL
+TOTAL_CHOLESTEROL_AT_RISK = _t("TOTAL_CHOLESTEROL_AT_RISK")       # mg/dL
+TOTAL_CHOLESTEROL_ELEVATED = _t("TOTAL_CHOLESTEROL_ELEVATED")     # mg/dL
+LDL_C_NORMAL_CAD = _t("LDL_C_NORMAL_CAD")                         # mg/dL, preferred ceiling if CAD susceptibility present
+LDL_C_AT_RISK = _t("LDL_C_AT_RISK")                               # mg/dL
+LDL_C_ELEVATED = _t("LDL_C_ELEVATED")                             # mg/dL
+LDL_C_SEVERE = _t("LDL_C_SEVERE")                                 # mg/dL
+HDL_C_MALE_MIN = _t("HDL_C_MALE_MIN")                             # mg/dL
+HDL_C_FEMALE_MIN = _t("HDL_C_FEMALE_MIN")                         # mg/dL
+HDL_C_MALE_SEVERE = _t("HDL_C_MALE_SEVERE")                       # mg/dL
+HDL_C_FEMALE_SEVERE = _t("HDL_C_FEMALE_SEVERE")                   # mg/dL
+NON_HDL_C_NORMAL = _t("NON_HDL_C_NORMAL")                         # mg/dL
+NON_HDL_C_ELEVATED = _t("NON_HDL_C_ELEVATED")                     # mg/dL
+NON_HDL_C_SEVERE = _t("NON_HDL_C_SEVERE")                         # mg/dL
+VLDL_UPPER_NORMAL = _t("VLDL_UPPER_NORMAL")                       # mg/dL
+TRIGLYCERIDES_AT_RISK = _t("TRIGLYCERIDES_AT_RISK")               # mg/dL
+TRIGLYCERIDES_ELEVATED = _t("TRIGLYCERIDES_ELEVATED")             # mg/dL
+TRIGLYCERIDES_SEVERE = _t("TRIGLYCERIDES_SEVERE")                 # mg/dL
+TRIGLYCERIDES_VERY_SEVERE = _t("TRIGLYCERIDES_VERY_SEVERE")       # mg/dL
 # TG_HDL_RATIO_ELEVATED = 2.5
-APOB_AT_RISK = 100                    # mg/dL
-APOB_ELEVATED = 130                   # mg/dL
-LPA_AT_RISK = 50                      # mg/dL
-LPA_ELEVATED = 100                    # mg/dL
+APOB_AT_RISK = _t("APOB_AT_RISK")                                 # mg/dL
+APOB_ELEVATED = _t("APOB_ELEVATED")                               # mg/dL
+LPA_AT_RISK = _t("LPA_AT_RISK")                                   # mg/dL
+LPA_ELEVATED = _t("LPA_ELEVATED")                                 # mg/dL
 
 # --- Glucose / Metabolic ---
-FASTING_GLUCOSE_AT_RISK = 100         # mg/dL
-FASTING_GLUCOSE_ELEVATED = 126        # mg/dL
-HBA1C_AT_RISK = 5.7                   # %
-HBA1C_ELEVATED = 6.5                  # %
-FASTING_INSULIN_RANGE = (2, 25)       # uIU/mL
+FASTING_GLUCOSE_AT_RISK = _t("FASTING_GLUCOSE_AT_RISK")           # mg/dL
+FASTING_GLUCOSE_ELEVATED = _t("FASTING_GLUCOSE_ELEVATED")         # mg/dL
+HBA1C_AT_RISK = _t("HBA1C_AT_RISK")                               # %
+HBA1C_ELEVATED = _t("HBA1C_ELEVATED")                             # %
+FASTING_INSULIN_RANGE = _t("FASTING_INSULIN_RANGE")               # uIU/mL
 
 # --- Inflammatory Markers ---
-CRP_AT_RISK = 0.8                     # mg/L
-CRP_AT_RISK_COPD = 1.0                # mg/L
-CRP_ELEVATED = 3.0                    # mg/L
-IGE_UPPER_NORMAL = 114                # IU/mL
-FIBRINOGEN_RANGE = (213, 433)         # mg/dL (updated from 200-400)
+CRP_AT_RISK = _t("CRP_AT_RISK")                                   # mg/L
+CRP_AT_RISK_COPD = _t("CRP_AT_RISK_COPD")                         # mg/L
+CRP_ELEVATED = _t("CRP_ELEVATED")                                 # mg/L
+IGE_UPPER_NORMAL = _t("IGE_UPPER_NORMAL")                         # IU/mL
+FIBRINOGEN_RANGE = _t("FIBRINOGEN_RANGE")                         # mg/dL (updated from 200-400)
 # FECAL_CALPROTECTIN_AT_RISK = 50       # ug/g
 # FECAL_CALPROTECTIN_ELEVATED = 200     # ug/g
 
@@ -208,63 +223,64 @@ def esr_upper_normal(age):
     """Returns ESR upper limit of normal (mm/hr) by age."""
     if age is None:
         return None
-    
-    if age <= 10:
-        return 15
+
+    # added: age cutoff/limits now come from THRESHOLDS so they can vary per lab too
+    if age <= THRESHOLDS["ESR_AGE_CUTOFF"]:
+        return THRESHOLDS["ESR_UPPER_NORMAL_YOUNG"]
     else:
-        return 20
+        return THRESHOLDS["ESR_UPPER_NORMAL_OLDER"]
 
 # --- CBC ---
-EOSINOPHILS_UPPER_NORMAL = 0.4        # x10^9/L
-EOSINOPHILS_BORDERLINE = 0.38         # x10^9/L
-EOSINOPHILS_LIKELY = 0.42             # x10^9/L
-EOSINOPHILS_ELEVATED = 0.5            # x10^9/L
-NEUTROPHILS_RANGE = (1.8, 7.5)        # x10^9/L
+EOSINOPHILS_UPPER_NORMAL = _t("EOSINOPHILS_UPPER_NORMAL")         # x10^9/L
+EOSINOPHILS_BORDERLINE = _t("EOSINOPHILS_BORDERLINE")             # x10^9/L
+EOSINOPHILS_LIKELY = _t("EOSINOPHILS_LIKELY")                     # x10^9/L
+EOSINOPHILS_ELEVATED = _t("EOSINOPHILS_ELEVATED")                 # x10^9/L
+NEUTROPHILS_RANGE = _t("NEUTROPHILS_RANGE")                       # x10^9/L
 # PLATELETS_RANGE = (150, 400)          # x10^3/μL
-NLR_RANGE = (3, 6)                    # ratio
-HEMOGLOBIN_MALE_RANGE = (13, 18)      # g/dL
-HEMOGLOBIN_FEMALE_RANGE = (12, 16)    # g/dL
+NLR_RANGE = _t("NLR_RANGE")                                       # ratio
+HEMOGLOBIN_MALE_RANGE = _t("HEMOGLOBIN_MALE_RANGE")               # g/dL
+HEMOGLOBIN_FEMALE_RANGE = _t("HEMOGLOBIN_FEMALE_RANGE")           # g/dL
 
 # --- Liver Function / Fibrosis ---
-AST_RANGE = (10, 31)                  # U/L
-ALT_RANGE = (10, 31)                  # U/L
-GGT_RANGE = (9, 36)                   # U/L
-AST_ALT_RATIO_RANGE = (0.7, 2.2)
-FIB4_AT_RISK = 1.3
-FIB4_ELEVATED = 2.67
-ALBUMIN_RANGE = (3.5, 5.5)            # g/dL
+AST_RANGE = _t("AST_RANGE")                                       # U/L
+ALT_RANGE = _t("ALT_RANGE")                                       # U/L
+GGT_RANGE = _t("GGT_RANGE")                                       # U/L
+AST_ALT_RATIO_RANGE = _t("AST_ALT_RATIO_RANGE")
+FIB4_AT_RISK = _t("FIB4_AT_RISK")
+FIB4_ELEVATED = _t("FIB4_ELEVATED")
+ALBUMIN_RANGE = _t("ALBUMIN_RANGE")                               # g/dL
 # FIBROSIS_SCORE_ELEVATED_THRESHOLD = None  # "fibrosis scores" referenced generically (TM6SF2 rule), no defined metric/cutoff
 
 # --- Thyroid ---
-TSH_RANGE = (0.4, 4.0)                # mIU/L
-TSH_SUPPRESSED = 0.54                 # mIU/L
-TSH_ELEVATED = 5.4                    # mIU/L
-TSH_ELEVATED_RANGE = (5.4, 10.0)      # mIU/L
-FREE_T4_RANGE = (0.8, 1.8)            # ng/dL
-FREE_T3_RANGE = (0.91, 3.97)          # pg/mL
-TPOAB_UPPER_NORMAL = 5.61             # IU/mL
+TSH_RANGE = _t("TSH_RANGE")                                       # mIU/L
+TSH_SUPPRESSED = _t("TSH_SUPPRESSED")                             # mIU/L
+TSH_ELEVATED = _t("TSH_ELEVATED")                                 # mIU/L
+TSH_ELEVATED_RANGE = _t("TSH_ELEVATED_RANGE")                     # mIU/L
+FREE_T4_RANGE = _t("FREE_T4_RANGE")                               # ng/dL
+FREE_T3_RANGE = _t("FREE_T3_RANGE")                               # pg/mL
+TPOAB_UPPER_NORMAL = _t("TPOAB_UPPER_NORMAL")                     # IU/mL
 
 # --- Iron studies (HFE) ---
 # FERRITIN_ELEVATED_THRESHOLD = None  # prompt says "ferritin abnormal", no numeric cutoff given
 # TRANSFERRIN_SATURATION_ELEVATED_THRESHOLD = None  # same as above, no numeric cutoff given
 # SERUM_IRON_ELEVATED_THRESHOLD = None  # not referenced with a number anywhere in prompt, included for completeness if needed
 
-CALCIUM_UPPER_NORMAL = 10.2                    # mg/dL
-PTH_UPPER_NORMAL = 65                          # pg/mL
-CK_UPPER_NORMAL = 168                          # U/L
+CALCIUM_UPPER_NORMAL = _t("CALCIUM_UPPER_NORMAL")                 # mg/dL
+PTH_UPPER_NORMAL = _t("PTH_UPPER_NORMAL")                         # pg/mL
+CK_UPPER_NORMAL = _t("CK_UPPER_NORMAL")                           # U/L
 
-TOTAL_BILIRUBIN_RANGE = (1.2, 4)               # mg/dL (Gilbert)
-DIRECT_BILIRUBIN_LOWER = 0.4                   # mg/dL (Gilbert)
-INDIRECT_BILIRUBIN_UPPER = 0.2                 # mg/dL (Gilbert)
-AST_UPPER_STRICT = 41                          # U/L (Gilbert)
-ALP_RANGE = (40, 129)                          # U/L (Gilbert)
-GGT_LFT_RANGE = (12, 64)                       # U/L (Gilbert)
-FERRITIN_ELEVATED_MALE = 300                   # ng/mL (Hemochromatosis)
-FERRITIN_ELEVATED_FEMALE = 200                 # ng/mL (Hemochromatosis)
-TRANSFERRIN_SATURATION_ELEVATED = 45           # % (Hemochromatosis)
-HEMOGLOBIN_UPPER_HEMOCHROMATOSIS = 18          # g/dL
-MCV_UPPER_HEMOCHROMATOSIS = 100                # fL
-MCH_UPPER_HEMOCHROMATOSIS = 34                 # pg
+TOTAL_BILIRUBIN_RANGE = _t("TOTAL_BILIRUBIN_RANGE")               # mg/dL (Gilbert)
+DIRECT_BILIRUBIN_LOWER = _t("DIRECT_BILIRUBIN_LOWER")             # mg/dL (Gilbert)
+INDIRECT_BILIRUBIN_UPPER = _t("INDIRECT_BILIRUBIN_UPPER")         # mg/dL (Gilbert)
+AST_UPPER_STRICT = _t("AST_UPPER_STRICT")                         # U/L (Gilbert)
+ALP_RANGE = _t("ALP_RANGE")                                       # U/L (Gilbert)
+GGT_LFT_RANGE = _t("GGT_LFT_RANGE")                               # U/L (Gilbert)
+FERRITIN_ELEVATED_MALE = _t("FERRITIN_ELEVATED_MALE")             # ng/mL (Hemochromatosis)
+FERRITIN_ELEVATED_FEMALE = _t("FERRITIN_ELEVATED_FEMALE")         # ng/mL (Hemochromatosis)
+TRANSFERRIN_SATURATION_ELEVATED = _t("TRANSFERRIN_SATURATION_ELEVATED")  # % (Hemochromatosis)
+HEMOGLOBIN_UPPER_HEMOCHROMATOSIS = _t("HEMOGLOBIN_UPPER_HEMOCHROMATOSIS")  # g/dL
+MCV_UPPER_HEMOCHROMATOSIS = _t("MCV_UPPER_HEMOCHROMATOSIS")       # fL
+MCH_UPPER_HEMOCHROMATOSIS = _t("MCH_UPPER_HEMOCHROMATOSIS")       # pg
 # VITAMIN_D_DEFICIENT = 20                       # ng/mL (Celiac)
 # MCV_LOWER_CELIAC = 82                          # fL
 # MCH_LOWER_CELIAC = 27                          # pg
@@ -514,8 +530,7 @@ def get_triggering_prs(condition_name, genetics):
 #     if is_gene_flagged(genetics, condition_name):
 #         return "Gene Flagged"
 #     return category
-# =============================================================================
-# (14)
+# 
 # =============================================================================
 
 # Family history and symptoms of respective conditions, are mentioned in the deck for ref
