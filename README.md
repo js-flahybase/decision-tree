@@ -79,7 +79,7 @@ This makes it possible to see *why* a category was reached, not just the final r
 
 ---
 
-## Five Types of Input
+## Six Types of Input
 
 | Input | Where it comes from | Type | Example |
 |---|---|---|---|
@@ -87,6 +87,7 @@ This makes it possible to see *why* a category was reached, not just the final r
 | **Monogenic gene flags** | Monogenic (ClinVar-style) JSON — Pathogenic/Likely Pathogenic entries | List of gene names | `["HFE", "TP53"]` |
 | **Polygenic (PRS) scores** | Polygenic risk score JSON | Per-condition category (`typical` / `elevated` / `moderately_elevated`) | `"cad": {"category": "elevated"}` |
 | **APOE status** | APOE-specific JSON | Genotype string | `"e3/e4"` — contributes an `APOE` gene flag if an ε4 allele is present |
+| **Threshold json (`lab specific`)** | Each Lab's ranges/triggers | Numbers/Ranges | `"HBA1C_ELEVATED": 6.5,` |
 | **Patient-reported context** (`family_history`, `symptoms`, `past_history`) | Asked to / reported by the patient | `True` / `False` | `family_history of Alzheimer's: True` |
 
 `Patient`,`Genetics`, and `Labs` (passed into every function) in a dict format combining all three genetic sources and blood biomarkers values:
@@ -151,7 +152,7 @@ Therefore, a missing laboratory value **never causes the function to crash**; it
 ## Running the Script
 
 ```bash
-python script.py <monogenic.json> <prs.json> <apoe.json> <blood.csv> <output.csv>
+python script.py <monogenic.json> <prs.json> <apoe.json> <blood.csv> <output.csv> --thresholds <thresholds_lab_A.json>
 ```
 Optional overrides (only needed if the blood CSV doesn't include `sex`/`age` rows, or we want to override them):
 ```bash
