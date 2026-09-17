@@ -1,11 +1,11 @@
 """
 Condition Evaluator Engine
 ==========================
-
+ 
 Reads patient lab values (from a CSV) and evaluates a set of clinical
 "Significant Pattern" / "Early Pattern" rules, one function per
 condition, following the template:
-
+ 
     def evaluate_<condition>(labs, patient):
         # 2. Pull values from labs / patient
         some_value = labs.get("some_value")
@@ -22,28 +22,42 @@ condition, following the template:
             "Condition": "<Condition Name>",
             "Category": category
         }]
-
+ 
 OUTPUT FILTERING
 -----------------
 Only conditions whose Category is "Significant Pattern" or
 "Early Pattern" are written to the output CSV. Conditions that
 evaluate to "" (no pattern met) are silently dropped from the output
 so the report only lists conditions actually flagged for the patient.
-
+ 
 CSV INPUT FORMAT
 -----------------
 The input CSV is expected to have one row per patient, with lab test
 names as columns (snake_case, see LAB_KEYS below) plus optional patient
 columns: patient_id, sex ("M"/"F"), age.
-
+ 
 Example columns:
     patient_id, sex, age, fasting_glucose, hba1c, tsh, free_t4, ...
-
+ 
+THRESHOLDS
+-----------------
+All numeric thresholds used by the evaluators below are loaded from an
+external JSON file (a lab-specific thresholds.json, required, no default)
+rather than being hardcoded in this file. This lets clinical thresholds
+be tuned/reviewed per lab without touching the code. See _load_thresholds().
+ 
 Run:
-    python condition_evaluators.py input.csv output.csv
+    python blood_functions.py input.csv output.csv [thresholds.json]
+ 
+This script also runs fine as a Snakemake rule: if a `snakemake` object
+is present in the global namespace (injected by Snakemake), its
+`input.thresholds` path is used as instead of the CLI argument.
+
 """
 
 import csv
+import json
+import os
 import sys
 from typing import Optional, Dict, Any, List
 
@@ -63,7 +77,7 @@ CONDITION_DOMAINS = {
     "Inflammatory Bowel Disease": "Digestive Health",
     "Hereditary Hemochromatosis": "Digestive Health",
     "Eczema": "Skin Health",
-    "Atopic Dermatitis": "Skin Health",
+    "Atopic Dermatitis": "Skin Health"
 }
 
 
@@ -186,125 +200,91 @@ def _track_range(triggered_list: list, name: str, value: Any, low: Any, high: An
         if v is not None:
             triggered_list.append(f"{name}={v} ({low}-{high})")
 # ---------------------------------------------------------------------------
-# 2. Thresholds (threshold1 - "Significant Pattern" tier)
+# 2. Thresholds — loaded from an external JSON file
 # ---------------------------------------------------------------------------
+#
+# The JSON file must contain two top-level objects:
+#   "THRESHOLDS"  -> threshold1, the "Significant Pattern" tier
+#   "THRESHOLDS2" -> threshold2, the "Early Pattern" tier
+#
+# Any value that needs to be a (low, high) range pair (e.g.
+# tsh_borderline_hypothyroid, free_t4_range) must be stored as a
+# 2-element JSON array; it gets converted to a Python tuple on load so
+# existing code that does THRESHOLDS2["key"][0] / [1] keeps working.
+if "snakemake" in globals():
+    DEFAULT_THRESHOLDS_PATH = snakemake.input.thresholds
+else:
+    DEFAULT_THRESHOLDS_PATH = None
+    
+DEFAULT_THRESHOLDS_PATH = snakemake.input.thresholds 
+def _tupleize_ranges(d: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert any 2-element list values into tuples (for range thresholds)."""
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, list) and len(v) == 2 and all(isinstance(x, (int, float)) for x in v):
+            out[k] = tuple(v)
+        else:
+            out[k] = v
+    return out
+ 
+ 
+def _load_thresholds(path: str = DEFAULT_THRESHOLDS_PATH):
+    """Load THRESHOLDS and THRESHOLDS2 dicts from a JSON file."""
+    if path is None:  # added: no default file to fall back to anymore
+        raise FileNotFoundError(
+            "No thresholds JSON path given. Pass one as the third CLI argument "
+            "(python condition_evaluators.py <input> <output> <thresholds.json>), "
+            "or set it via Snakemake's input.thresholds."
+        )
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Thresholds JSON file not found at '{path}'. "
+            "Pass a valid path as the third CLI argument, or place a "
+            "thresholds.json file next to this script."
+        )
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Thresholds JSON file at '{path}' is not valid JSON: {e}")
+ 
+    if "THRESHOLDS" not in data or "THRESHOLDS2" not in data:
+        raise ValueError(
+            f"Thresholds JSON file at '{path}' must contain both "
+            "'THRESHOLDS' and 'THRESHOLDS2' top-level keys."
+        )
+ 
+    thresholds1 = _tupleize_ranges(data["THRESHOLDS"])
+    thresholds2 = _tupleize_ranges(data["THRESHOLDS2"])
+    return thresholds1, thresholds2
+ 
+ 
+# Module-level THRESHOLDS / THRESHOLDS2 populated at import time from the
+# default JSON path so existing evaluator functions (which reference the
+# module-level names directly) keep working unchanged. Call
+# load_thresholds_from_file() to reload from a different path (e.g. when
+# a custom path is given on the CLI).
+THRESHOLDS: Dict[str, Any] = {}
+THRESHOLDS2: Dict[str, Any] = {}
+ 
+ 
+def load_thresholds_from_file(path: str = DEFAULT_THRESHOLDS_PATH) -> None:
+    """(Re)load the module-level THRESHOLDS / THRESHOLDS2 dicts from JSON."""
+    global THRESHOLDS, THRESHOLDS2
+    t1, t2 = _load_thresholds(path)
+    THRESHOLDS = t1
+    THRESHOLDS2 = t2
+ 
+ 
+# Load thresholds at import time using the default path, if present, so
+# the module works out of the box. If it's missing, defer the error until
+# process_csv()/main actually needs the values (so e.g. `import
+# condition_evaluators` for its helper functions alone doesn't blow up).
+try:
+    load_thresholds_from_file()
+except (FileNotFoundError, ValueError) as _e:
+    print(f"[WARN] {_e}")
 
-THRESHOLDS = {
-    # Endocrine Health
-    "fasting_plasma_glucose_high": 126,          # mg/dL
-    "hba1c_high": 6.5,                           # %
-    "eag_high": 150,                              # mg/dL
-    "fasting_insulin_high": 25.0,                # µIU/mL
-    "tsh_high_hypothyroid": 10.0,                # µIU/mL
-    "free_t4_low_hypothyroid": 0.8,              # ng/dL
-    "tsh_low_hyperthyroid": 0.1,                 # µIU/mL
-    "free_t4_high_hyperthyroid": 1.8,            # ng/dL
-    "free_t3_high_hyperthyroid": 4.4,              # pg/mL
-    "age_low": 25,
-    # Cardiac Health
-    "ldl_high": 160,                             # mg/dL
-    "crp_high_cardiac":  3,                     # mg/L
-    "lpa_high": 50,                              # mg/dL
-
-    # Respiratory Health
-    "eosinophils_high_resp":0.5,                # x10^9/L
-    "eosinophils_high_rhinitis": 2.0,               # x10^9/L
-    "ige_high_resp": 114,                  # IU/mL
-    "neutrophils_high": 7.5,                            # x10^9/L
-    "crp_high_resp": 3,                       # mg/L
-
-    # Digestive Health - NAFLD
-    "alt_high_men": 30, "alt_high_women": 20,    # U/L
-    "ggt_high": 64,                               # U/L
-    "triglycerides_high": 150,                   # mg/dL
-    "hba1c_high_nafld": 6.5,
-    "hdl_low_men": 40, "hdl_low_women": 50,      # mg/dL
-    "non_hdl_high": 160,                          # mg/dL
-    "fib4_high_35_65": 1.30,
-    "fib4_high_65_plus": 2.00,
-    "ast_alt_ratio_low": 1,
-    "age_35_65": 35,
-    "age_65_plus": 65,
-
-    # Digestive Health - IBD
-    "crp_high_ibd": 10,                     # mg/L 
-    "esr_high_ibd": 30,                      #mm/hr 
-    "platelets_high_ibd": 450,                 #x10^ 3 / µl 
-    "hemoglobin_low_men": 13, "hemoglobin_low_women": 12,     # gm/dL
-    "nlr_high": 2.5,
-    "plr_high": 150,
-    "lmr_high": 2.5,
-    "rdw_high": 14.5,                       # %
-    "mcv_low": 80,                           #fL
-    "wbc_high": 11000,                          #cells/cu.mm
-    "albumin_low": 3.5,                          #gm/dL 
-    "globulin_high": 3.6,                          #gm/dL 
-
-    # Digestive Health - Hemochromatosis
-    "tsat_high_men": 45, "tsat_high_women": 55,   # %
-    "ferritin_high_men": 300,                     # µg/L 
-    "ferritin_high_premeno_women": 200,           # µg/L
-
-    # Skin Health - Eczema
-    "eosinophils_high_eczema": 1.5,               # 10^9/L
-    "ige_high_eczema": 2000,                # IU/mL
-    "crp_high_skin": 3,
-    "esr_high_eczema": 40,
-
-    # # Skin Health - Atopic Dermatitis
-    # "eosinophils_high_ad": 0.5,                   # 10^9/L
-    # "ige_high_ad": 300,                     # IU/mL
-    # "esr_high_ad": 15,
-
-    # # Skin Health - Psoriasis (Category always "" per table)
-    # "hb_low_psoriasis_men": 13, "hb_low_psoriasis_women": 12,
-    # "tlc_high_psoriasis": 11000,
-    # "neutrophil_pct_high": 80,
-    # "lymphocyte_pct_high": 40,
-    # "nlr_high_psoriasis": 2.5,
-    # "plr_high_psoriasis": 150,
-    # "esr_high_psoriasis": 20,
-    # "crp_high_psoriasis": 5,
-}
-
-
-# ---------------------------------------------------------------------------
-# 2b. Threshold2 — "Early Pattern" tier
-# ---------------------------------------------------------------------------
-
-THRESHOLDS2 = {
-    # Endocrine Health
-    "fasting_plasma_glucose_borderline_low": 110,              # mg/dL
-    "fasting_plasma_glucose_borderline_high": 135,             # mg/dL
-    "hba1c_borderline": 6.5,                                   # %
-    "fasting_plasma_glucose_borderline_high_MODY": 99,         # mg/dL
-    "hba1c_borderline_MODY": 5.6,                              # %
-    "tsh_borderline_hypothyroid": (4.0 , 10.0),
-    "tsh_borderline_hyperthyroid": (0.1 , 0.4),
-    "free_t4_range": (0.8, 1.8),
-    "free_t3_range": (1.4, 4.4),
-
-    # Cardiac Health
-    "lpa_borderline_high": 50,
-
-
-    # Digestive Health - NAFLD
-    "alt_high_men": 30, "alt_high_women": 20,
-    "fib4_high_35_65": 1.30,
-    "fib4_high_65_plus": 2.00,
-    "ast_alt_ratio_high": 1,
-    "age_35_65": 35,
-    "age_65_plus": 65,
-    "triglycerides_borderline": 150,
-    "hba1c_borderline_nafld": 6.5,
-    "hdl_borderline_men": 40,
-    "hdl_borderline_women": 50,
-
-    # Digestive Health - IBD
-    "crp_borderline_low": 5, "crp_borderline_high": 10,
-    "esr_borderline": 20,
-
-}
 
 
 # ---------------------------------------------------------------------------
@@ -1091,9 +1071,10 @@ def process_csv(input_path: str, output_path: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python condition_evaluators.py <input_labs.csv> <output_results.csv>")
+    if len(sys.argv) != 4:
+        print("Usage: python blood_functions.py <input_labs.csv> <output_results.csv> <thresholds.json>")
         sys.exit(1)
 
+    load_thresholds_from_file(sys.argv[3])  
     process_csv(sys.argv[1], sys.argv[2])
     print(f"Done. Results written to {sys.argv[2]}")
