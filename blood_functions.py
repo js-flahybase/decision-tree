@@ -48,10 +48,6 @@ be tuned/reviewed per lab without touching the code. See _load_thresholds().
  
 Run:
     python blood_functions.py input.csv output.csv [thresholds.json]
- 
-This script also runs fine as a Snakemake rule: if a `snakemake` object
-is present in the global namespace (injected by Snakemake), its
-`input.thresholds` path is used as instead of the CLI argument.
 
 """
 
@@ -211,12 +207,10 @@ def _track_range(triggered_list: list, name: str, value: Any, low: Any, high: An
 # tsh_borderline_hypothyroid, free_t4_range) must be stored as a
 # 2-element JSON array; it gets converted to a Python tuple on load so
 # existing code that does THRESHOLDS2["key"][0] / [1] keeps working.
-if "snakemake" in globals():
-    DEFAULT_THRESHOLDS_PATH = snakemake.input.thresholds
-else:
-    DEFAULT_THRESHOLDS_PATH = None
-    
-DEFAULT_THRESHOLDS_PATH = snakemake.input.thresholds 
+ 
+DEFAULT_THRESHOLDS_PATH = sys.argv[3]
+ 
+ 
 def _tupleize_ranges(d: Dict[str, Any]) -> Dict[str, Any]:
     """Convert any 2-element list values into tuples (for range thresholds)."""
     out = {}
@@ -230,12 +224,6 @@ def _tupleize_ranges(d: Dict[str, Any]) -> Dict[str, Any]:
  
 def _load_thresholds(path: str = DEFAULT_THRESHOLDS_PATH):
     """Load THRESHOLDS and THRESHOLDS2 dicts from a JSON file."""
-    if path is None:  # added: no default file to fall back to anymore
-        raise FileNotFoundError(
-            "No thresholds JSON path given. Pass one as the third CLI argument "
-            "(python condition_evaluators.py <input> <output> <thresholds.json>), "
-            "or set it via Snakemake's input.thresholds."
-        )
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -284,7 +272,7 @@ try:
     load_thresholds_from_file()
 except (FileNotFoundError, ValueError) as _e:
     print(f"[WARN] {_e}")
-
+ 
 
 
 # ---------------------------------------------------------------------------
