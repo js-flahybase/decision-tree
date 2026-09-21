@@ -311,11 +311,11 @@ def evaluate_type2_diabetes(labs, patient):
         if fpg_flag:
             _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
         elif fpg_borderline_flag:
-            _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"][0], THRESHOLDS2["fasting_plasma_glucose_borderline_high"][1], fpg_borderline_flag)
+            _track_range(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"][0], THRESHOLDS2["fasting_plasma_glucose_borderline_high"][1], fpg_borderline_flag)
         if hba1c_flag:
             _track(partial_triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
         elif hba1c_borderline_flag:
-            _track(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_low"][0], THRESHOLDS2["hba1c_borderline_high"][1], hba1c_borderline_flag)
+            _track_range(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_low"][0], THRESHOLDS2["hba1c_borderline_high"][1], hba1c_borderline_flag)
         # _track(partial_triggered, "eag", eag, THRESHOLDS["eag_high"], ">=", eag_flag)
         # _track(partial_triggered, "fasting_insulin", fasting_insulin, THRESHOLDS["fasting_insulin_high"], ">=", insulin_flag)
 
