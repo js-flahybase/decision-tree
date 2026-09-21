@@ -901,7 +901,7 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
 
     if (lft_flag and fib4_elevated) or (lft_flag and fib4_elevated and (symptoms or family_history)):
         category = "Significant Pattern"
-    elif (lft_flag or fib4_at_risk):
+    elif fib4_at_risk or fib4_elevated:
         category = "Early Pattern"
     else:
         category = "Elevated susceptibility"
