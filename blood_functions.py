@@ -283,48 +283,46 @@ def evaluate_type2_diabetes(labs, patient):
     # 2. Pull values from labs / patient
     fpg = labs.get("fasting_glucose")
     hba1c = labs.get("hba1c")
-    eag = labs.get("estimated_average_glucose_(eag)")
-    fasting_insulin = labs.get("fasting_insulin")
+    # eag = labs.get("estimated_average_glucose_(eag)")
+    # fasting_insulin = labs.get("fasting_insulin")
 
     # 3. Check if values are abnormal
     fpg_flag = is_elevated(fpg, THRESHOLDS["fasting_plasma_glucose_high"])
     hba1c_flag = is_elevated(hba1c, THRESHOLDS["hba1c_high"])
-    eag_flag = is_elevated(eag, THRESHOLDS["eag_high"])
-    insulin_flag = is_elevated(fasting_insulin, THRESHOLDS["fasting_insulin_high"])
+    # eag_flag = is_elevated(eag, THRESHOLDS["eag_high"])
+    # insulin_flag = is_elevated(fasting_insulin, THRESHOLDS["fasting_insulin_high"])
 
     fpg_borderline_flag = in_range(fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"], THRESHOLDS2["fasting_plasma_glucose_borderline_high"])
-    hba1c_borderline_flag = is_elevated(hba1c, THRESHOLDS2["hba1c_borderline"])
+    hba1c_borderline_flag = in_range(hba1c, THRESHOLDS2["hba1c_borderline_low"], THRESHOLDS2["hba1c_borderline_high"])
 
     # 4. Decide category
     triggered = []
     partial_triggered = []
-    if fpg_flag and hba1c_flag and eag_flag and insulin_flag:
+    if fpg_flag and hba1c_flag:
         category = "Significant Pattern"
         _track(triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
         _track(triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
-        _track(triggered, "eag", eag, THRESHOLDS["eag_high"], ">=", eag_flag)
-        _track(triggered, "fasting_insulin", fasting_insulin, THRESHOLDS["fasting_insulin_high"], ">=", insulin_flag)
     elif fpg_borderline_flag and hba1c_borderline_flag:
         category = "Early Pattern"
-        _track(triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"], ">=", fpg_borderline_flag)
-        _track(triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline"], ">=", hba1c_borderline_flag)
+        _track_range(triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"][0], THRESHOLDS2["fasting_plasma_glucose_borderline_high"][1], fpg_borderline_flag)
+        _track_range(triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_low"][0], THRESHOLDS2["hba1c_borderline_high"][1], hba1c_borderline_flag)
     else:
         category = "Typical"
         if fpg_flag:
             _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
         elif fpg_borderline_flag:
-            _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"], ">=", fpg_borderline_flag)
+            _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"][0], THRESHOLDS2["fasting_plasma_glucose_borderline_high"][1], fpg_borderline_flag)
         if hba1c_flag:
             _track(partial_triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
         elif hba1c_borderline_flag:
-            _track(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline"], ">=", hba1c_borderline_flag)
-        _track(partial_triggered, "eag", eag, THRESHOLDS["eag_high"], ">=", eag_flag)
-        _track(partial_triggered, "fasting_insulin", fasting_insulin, THRESHOLDS["fasting_insulin_high"], ">=", insulin_flag)
+            _track(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_low"][0], THRESHOLDS2["hba1c_borderline_high"][1], hba1c_borderline_flag)
+        # _track(partial_triggered, "eag", eag, THRESHOLDS["eag_high"], ">=", eag_flag)
+        # _track(partial_triggered, "fasting_insulin", fasting_insulin, THRESHOLDS["fasting_insulin_high"], ">=", insulin_flag)
 
     return [{
         "Condition": "Type 2 Diabetes",
         "Category": category,
-        "Values": _fmt_values(fasting_glucose=fpg, hba1c=hba1c, eag=eag, fasting_insulin=fasting_insulin),
+        "Values": _fmt_values(fasting_glucose=fpg, hba1c=hba1c),
         "TriggeredValues": ", ".join(triggered),
         "PartialTriggered": ", ".join(partial_triggered)
     }]
