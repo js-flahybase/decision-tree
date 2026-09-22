@@ -1318,13 +1318,13 @@ def evaluate_fh(labs, patient, genetics, family_history, symptoms=False):
     triggered = []
     elevated_early = (
         is_above(ldl, LDL_C_AT_RISK) or 
-        is_above(non_hdl, NON_HDL_C_ELEVATED) or
-        is_elevated(lpa, LPA_AT_RISK)
+        is_above(non_hdl, NON_HDL_C_ELEVATED)
+        # is_elevated(lpa, LPA_AT_RISK) #is only getting noted but not responsible for any trigger (will only be printed if combined with another trigger) 
     )
     elevated_likely = (
         is_above(ldl, LDL_C_ELEVATED) or 
-        is_above(non_hdl, NON_HDL_C_SEVERE) or
-        is_elevated(lpa, LPA_ELEVATED)
+        is_above(non_hdl, NON_HDL_C_SEVERE)
+        # is_elevated(lpa, LPA_ELEVATED) #is only getting noted but not responsible for any trigger (will only be printed if combined with another trigger) 
     )
 
     # changed for noting mild crossed values as well if significant is already triggered by another marker (for flahyAI and GP reporting)
@@ -1450,13 +1450,13 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
         is_elevated(ldl, LDL_C_AT_RISK) or 
         is_elevated(non_hdl, NON_HDL_C_ELEVATED) or
         is_elevated(apob, APOB_AT_RISK)
-        # is_elevated(lpa, LPA_AT_RISK) #removed from early pattern and added to only-blood's elevated susceptibility category
+        # is_elevated(lpa, LPA_AT_RISK) #is only getting noted but not responsible for any trigger (will only be printed if combined with another trigger) 
     )
     ldl_high = (
         is_elevated(ldl, LDL_C_ELEVATED) or 
         is_elevated(non_hdl, NON_HDL_C_SEVERE) or
-        is_elevated(apob, APOB_ELEVATED) or
-        is_elevated(lpa, LPA_ELEVATED)
+        is_elevated(apob, APOB_ELEVATED)
+        # is_elevated(lpa, LPA_ELEVATED) #is only getting noted but not responsible for any trigger (will only be printed if combined with another trigger)
     )
 
     # changed for noting mild crossed values as well if significant is already triggered by another marker (for flahyAI and GP reporting)
@@ -1482,11 +1482,11 @@ def evaluate_cad(labs, patient, genetics, family_history, symptoms=False):
         note(triggered, "apob", apob, True, f">={APOB_AT_RISK}")
 
     lpa_likely_flag = is_elevated(lpa, LPA_ELEVATED)
-    # lpa_early_flag = is_elevated(lpa, LPA_AT_RISK)
+    lpa_early_flag = is_elevated(lpa, LPA_AT_RISK)
     if lpa_likely_flag:
         note(triggered, "lpa", lpa, True, f">={LPA_ELEVATED}")
-    # elif lpa_early_flag:
-    #     note(triggered, "lpa", lpa, True, f">={LPA_AT_RISK}")
+    elif lpa_early_flag:
+        note(triggered, "lpa", lpa, True, f">={LPA_AT_RISK}")
 
     low_hdl = note(triggered, "hdl_c", hdl, is_below(hdl, hdl_min), f"<{hdl_min}")
     tg_moderate = note(triggered, "triglycerides", triglycerides, is_elevated(triglycerides, TRIGLYCERIDES_AT_RISK), f">={TRIGLYCERIDES_AT_RISK}")
