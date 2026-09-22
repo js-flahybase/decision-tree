@@ -875,15 +875,24 @@ def evaluate_ibd(labs, patient, genetics, family_history, symptoms=False):
 def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
     if not has_flagged_gene(genetics, "NAFLD"):
         return [{"Condition": "NAFLD", "Category": GENE_NOT_FOUND}]
-
+    
+    fib4 = labs.get("fib4")
     ast = labs.get("ast")
     alt = labs.get("alt")
     ggt = labs.get("ggt")
-    fib4 = labs.get("fib4")
     platelets = labs.get("platelets")
     ast_alt_ratio = labs.get("ast/alt")
 
     triggered = []
+    fib4_elevated = is_elevated(fib4, FIB4_ELEVATED)
+    fib4_at_risk = is_elevated(fib4, FIB4_AT_RISK)
+    # platelets_low = note(triggered, "platelets", platelets, is_below(platelets, PLATELETS_RANGE[0]), f"<{PLATELETS_RANGE[0]}") #removed in updated deck
+    
+    if fib4_elevated:
+        note(triggered, "fib4", fib4, True, f">={FIB4_ELEVATED}")
+    elif fib4_at_risk:
+        note(triggered, "fib4", fib4, True, f">={FIB4_AT_RISK}")
+        
     ast_flag = note(triggered, "ast", ast, is_above(ast, AST_RANGE[1]), f">{AST_RANGE[1]}")
     alt_flag = note(triggered, "alt", alt, is_above(alt, ALT_RANGE[1]), f">{ALT_RANGE[1]}")
     ggt_flag = note(triggered, "ggt", ggt, is_above(ggt, GGT_RANGE[1]), f">{GGT_RANGE[1]}")
@@ -894,15 +903,6 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
         or ggt_flag
         or ratio_flag
     )
-
-    fib4_elevated = is_elevated(fib4, FIB4_ELEVATED)
-    fib4_at_risk = is_elevated(fib4, FIB4_AT_RISK)
-    # platelets_low = note(triggered, "platelets", platelets, is_below(platelets, PLATELETS_RANGE[0]), f"<{PLATELETS_RANGE[0]}") #removed in updated deck
-
-    if fib4_elevated:
-        note(triggered, "fib4", fib4, True, f">={FIB4_ELEVATED}")
-    elif fib4_at_risk:
-        note(triggered, "fib4", fib4, True, f">={FIB4_AT_RISK}")
 
     if (lft_flag and fib4_elevated) or (lft_flag and fib4_elevated and (symptoms or family_history)):
         category = "Significant Pattern"
@@ -916,7 +916,6 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
         "DNA Marker(s)": get_gene_trigger(genetics, "NAFLD"),
         "Blood Marker(s)": ", ".join(triggered),
     }]
-
 
 # Osteoarthritis
 # only based on user context, will assign "early pattern" only based on PRS/gene and significant if user context present.
