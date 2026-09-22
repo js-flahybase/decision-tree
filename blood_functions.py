@@ -920,7 +920,7 @@ PATIENT_COLUMNS = {"patient_id", "sex", "age"}
 # (i.e. "" / no pattern met) is filtered out of the report.
 OUTPUT_FIELDNAMES = ["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)"]
 # VISIBLE_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated susceptibility", "Typical"}
-VISIBLE_CATEGORIES = {"Significant Pattern", "Typical"}
+VISIBLE_CATEGORIES = {"Significant Pattern", "Typical", "Elevated susceptibility"}
 # Columns that indicate a "long format" CSV (one row per lab parameter,
 # rather than one column per lab). If both are present we pivot the
 # rows into one wide record per patient before evaluating.
