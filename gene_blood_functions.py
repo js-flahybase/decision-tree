@@ -895,13 +895,18 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
         or ratio_flag
     )
 
-    fib4_elevated = note(triggered, "fib4", fib4, is_elevated(fib4, FIB4_ELEVATED), f">={FIB4_ELEVATED}")
-    fib4_at_risk = note(triggered, "fib4", fib4, fib4 is not None and FIB4_AT_RISK <= fib4 < FIB4_ELEVATED, f"[{FIB4_AT_RISK}-{FIB4_ELEVATED})")
+    fib4_elevated = is_elevated(fib4, FIB4_ELEVATED)
+    fib4_at_risk = is_elevated(fib4, FIB4_AT_RISK)
     # platelets_low = note(triggered, "platelets", platelets, is_below(platelets, PLATELETS_RANGE[0]), f"<{PLATELETS_RANGE[0]}") #removed in updated deck
+
+    if fib4_elevated:
+        note(triggered, "fib4", fib4, True, f">={FIB4_ELEVATED}")
+    elif fib4_at_risk:
+        note(triggered, "fib4", fib4, True, f">={FIB4_AT_RISK}")
 
     if (lft_flag and fib4_elevated) or (lft_flag and fib4_elevated and (symptoms or family_history)):
         category = "Significant Pattern"
-    elif fib4_at_risk or fib4_elevated:
+    elif fib4_at_risk:
         category = "Early Pattern"
     else:
         category = "Elevated susceptibility"
