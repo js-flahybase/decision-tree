@@ -7,7 +7,7 @@ Respiratory Health,COPD,Typical,,,,Typical - nothing to act on,
 Endocrine Health,Hyperthyroidism,Elevated susceptibility,CTLA4,,,Worth acting on for prevention,"tsh=0.15 (<0.54), free_t3=5.2 (>3.97), free_t4=2.1 (>1.8)"
 Endocrine Health,Hypothyroidism,Elevated susceptibility,CTLA4,,,Worth acting on for prevention,
 Digestive Health,Inflammatory Bowel Disease,Early Pattern,,crp=4.5 (>3.0),Polygenic Risk Classification,To discuss with General Practitioner,crp=4.5 (>3.0)
-Digestive Health,NAFLD,Early Pattern,,"ast=48.0 (>31), alt=65.0 (>31), ggt=70.0 (>36)",Polygenic Risk Classification,To discuss with General Practitioner,"ast=48.0 (>31), alt=65.0 (>31), ggt=70.0 (>36)"
+Digestive Health,NAFLD,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,"ast=35.0 (>31), alt=41.0 (>31)"
 Joints Health,Osteoarthritis,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,
 Brain Health,Parkinson's Disease,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), crp=4.5 (>3.0)"
 Skin Health,Psoriasis,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,"esr=35.0 (>20), crp=4.5 (>3.0)"
@@ -16,7 +16,7 @@ Respiratory Health,Rhinitis,Early Pattern,,eosinophils=9.0 (>0.4),Polygenic Risk
 Endocrine Health,Type 2 Diabetes,Typical,,,,Typical - nothing to act on,
 Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothing to act on,"fasting_glucose=118.0 (>=99), hba1c=6.9 (>=6.5)"
 Muscle Health,Muscular Dystrophy,Typical,,,,Typical - nothing to act on,
-Kidney & Metabolic Health,Gilbert Syndrome,Typical,,,,Typical - nothing to act on,
+Kidney & Metabolic Health,Gilbert Syndrome,Early Pattern,UGT1A1,"total_bilirubin=1.6 (1.2-3), direct_bilirubin=0.9 (<1), indirect_bilirubin=0.9 (>0.8), alt=41.0 (<= 41), ast=35.0 (<= 35), alp=40.0 (40-129), ggt=13.0 (12-64)",,To discuss with General Practitioner,"total_bilirubin=1.6 (1.2-3), direct_bilirubin=0.9 (<1), indirect_bilirubin=0.9 (>0.8), alt=41.0 (<= 41), ast=35.0 (<= 35), alp=40.0 (40-129), ggt=13.0 (12-64)"
 Digestive Health,Hereditary Hemochromatosis,Significant Pattern,,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)",,To discuss with General Practitioner,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)"
 Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Typical - nothing to act on,
 Cardiac Health,Cardiomyopathy,Typical,,,,Typical - nothing to act on,
