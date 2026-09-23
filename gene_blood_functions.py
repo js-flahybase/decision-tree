@@ -272,7 +272,8 @@ CK_UPPER_NORMAL = _t("CK_UPPER_NORMAL")                           # U/L
 TOTAL_BILIRUBIN_RANGE = _t("TOTAL_BILIRUBIN_RANGE")               # mg/dL (Gilbert)
 DIRECT_BILIRUBIN_LOWER = _t("DIRECT_BILIRUBIN_LOWER")             # mg/dL (Gilbert)
 INDIRECT_BILIRUBIN_UPPER = _t("INDIRECT_BILIRUBIN_UPPER")         # mg/dL (Gilbert)
-AST_UPPER_STRICT = _t("AST_UPPER_STRICT")                         # U/L (Gilbert)
+AST_UPPER = _t("AST_UPPER")                                       # U/L (Gilbert)
+ALT_UPPER = _t("ALT_UPPER")                                       # U/L (Gilbert)
 ALP_RANGE = _t("ALP_RANGE")                                       # U/L (Gilbert)
 GGT_LFT_RANGE = _t("GGT_LFT_RANGE")                               # U/L (Gilbert)
 FERRITIN_ELEVATED_MALE = _t("FERRITIN_ELEVATED_MALE")             # ng/mL (Hemochromatosis)
@@ -312,6 +313,10 @@ def is_above(value, threshold):
 def is_below(value, threshold):
     """Returns True if value is present and < threshold."""
     return value is not None and threshold is not None and value < threshold
+
+def is_low(value, threshold):
+    """Returns True if value is present and <= threshold."""
+    return value is not None and threshold is not None and value <= threshold
 
 def is_outside_range(value, low, high):
     """Returns True if value is present and outside [low, high]."""
@@ -1751,18 +1756,34 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
 
     triggered = []
 
-    total_bilirubin_flag = note(triggered, "total_bilirubin", total_bilirubin, is_above(total_bilirubin, TOTAL_BILIRUBIN_RANGE[0]), f">{TOTAL_BILIRUBIN_RANGE[0]}")
-    direct_bilirubin_flag = note(triggered, "direct_bilirubin", direct_bilirubin, is_above(direct_bilirubin, DIRECT_BILIRUBIN_LOWER), f">{DIRECT_BILIRUBIN_LOWER}")
-    indirect_bilirubin_flag = note(triggered, "indirect_bilirubin", indirect_bilirubin, indirect_bilirubin is not None and indirect_bilirubin < INDIRECT_BILIRUBIN_UPPER, f"<{INDIRECT_BILIRUBIN_UPPER}")
-    alt_normal = note(triggered, "alt", alt, is_below(alt, 41), "<=41")
-    ast_normal = note(triggered, "ast", ast, is_below(ast, 35), "<=35")
-    alp_normal = note(triggered, "alp", alp, is_elevated(alp, ALP_RANGE[0]) and is_below(alp, ALP_RANGE[1]), f"({ALP_RANGE[0]}-{ALP_RANGE[1]}]")
-    ggt_normal = note(triggered, "ggt", ggt, is_above(ggt, GGT_LFT_RANGE[0]) and is_below(ggt, GGT_LFT_RANGE[1]), f"({GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}]")
+    total_bilirubin_early = is_elevated(total_bilirubin, TOTAL_BILIRUBIN_RANGE[0]) and is_below(total_bilirubin, TOTAL_BILIRUBIN_RANGE[1])
+    total_bilirubin_elevated = is_elevated(total_bilirubin, TOTAL_BILIRUBIN_RANGE[1]) and is_low(total_bilirubin, TOTAL_BILIRUBIN_RANGE[2])
+    if total_bilirubin_elevated:
+        note(triggered, "total_bilirubin", total_bilirubin, True, f"{TOTAL_BILIRUBIN_RANGE[1]}-{TOTAL_BILIRUBIN_RANGE[2]}")
+    elif total_bilirubin_early:
+        note(triggered, "total_bilirubin", total_bilirubin, True, f"{TOTAL_BILIRUBIN_RANGE[0]}-{TOTAL_BILIRUBIN_RANGE[1]}")
+
+    direct_bilirubin_flag = note(triggered, "direct_bilirubin", direct_bilirubin, is_below(direct_bilirubin, DIRECT_BILIRUBIN_LOWER), f"<{DIRECT_BILIRUBIN_LOWER}")
+    indirect_bilirubin_flag = note(triggered, "indirect_bilirubin", indirect_bilirubin, is_above(indirect_bilirubin, INDIRECT_BILIRUBIN_UPPER), f">{INDIRECT_BILIRUBIN_UPPER}")
+    alt_normal = note(triggered, "alt", alt, is_low(alt, ALT_UPPER), f"<= {ALT_UPPER}")
+    ast_normal = note(triggered, "ast", ast, is_low(ast, AST_UPPER), f"<= {AST_UPPER}")
+    alp_normal = note(triggered, "alp", alp, is_elevated(alp, ALP_RANGE[0]) and is_low(alp, ALP_RANGE[1]), f"{ALP_RANGE[0]}-{ALP_RANGE[1]}")
+    ggt_normal = note(triggered, "ggt", ggt, is_elevated(ggt, GGT_LFT_RANGE[0]) and is_low(ggt, GGT_LFT_RANGE[1]), f"{GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}")
 
     # noting down logic updated, all 7 individually noted down if triggered accordingly
     # trigger logic unchanged — all 7 must be True together
-    parameter = (
-        total_bilirubin_flag and
+    parameter_elevated = (
+        total_bilirubin_elevated and
+        direct_bilirubin_flag and
+        indirect_bilirubin_flag and
+        alt_normal and
+        ast_normal and
+        alp_normal and
+        ggt_normal
+    )
+    
+    parameter_early = (
+        total_bilirubin_early and
         direct_bilirubin_flag and
         indirect_bilirubin_flag and
         alt_normal and
@@ -1772,18 +1793,13 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
     )
 
     if (
-        (parameter and family_history and symptoms and past_history) or
-        (parameter and family_history and past_history) or
-        (parameter and family_history) or
-        (family_history and symptoms) or
-        (family_history and past_history)
+        parameter_elevated or
+        (parameter_early and (family_history or symptoms or past_history))
     ):
         category = "Significant Pattern"
     elif (
         family_history or
-        (parameter and symptoms and past_history) or
-        (parameter and past_history) or
-        parameter #added for early pattern w/o user context
+        parameter_early 
     ):
         category = "Early Pattern"
     else:

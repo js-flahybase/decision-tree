@@ -20,8 +20,12 @@ mcv,96
 mch,32
 vitamin_d,18
 apob,145
-alt,65
-ast,48
-ggt,70
+alt,41
+ast,35
+alp,40
+ggt,13
 esr,35
 lpa,65
+total_bilirubin,1.6 
+direct_bilirubin,0.9
+indirect_bilirubin,0.9
