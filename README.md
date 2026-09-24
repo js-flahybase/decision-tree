@@ -140,10 +140,11 @@ The following helper functions are used throughout the evaluation functions:
 |---|---|
 | `is_elevated(value, threshold)` | `value >= threshold` |
 | `is_above(value, threshold)` | `value > threshold` (strict) |
-| `is_below(value, threshold)` | `value < threshold` |
+| `is_below(value, threshold)` | `value < threshold` (strict)|
+| `is_low(value, threshold)` | `value <= threshold` |
 | `is_outside_range(value, low, high)` | `value < low` or `value > high` |
 
-All four helpers automatically return `False` when the value is missing (`None`).
+All five helpers automatically return `False` when the value is missing (`None`).
 
 Therefore, a missing laboratory value **never causes the function to crash**; it simply does not count as an abnormal result.
 
