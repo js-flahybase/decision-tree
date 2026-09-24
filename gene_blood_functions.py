@@ -811,7 +811,7 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, symptoms=Fa
 
     triggered = []
     tsh_high = is_above(tsh, TSH_ELEVATED_RANGE[1])
-    tsh_mild = tsh is not None and TSH_ELEVATED_RANGE[0] < tsh <= TSH_ELEVATED_RANGE[1]
+    tsh_mild = tsh is not None and TSH_ELEVATED_RANGE[0] <= tsh <= TSH_ELEVATED_RANGE[1]
     if tsh_high:
         note(triggered, "tsh", tsh, True, f">{TSH_ELEVATED_RANGE[1]}")
     elif tsh_mild:

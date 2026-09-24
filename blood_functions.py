@@ -380,7 +380,7 @@ def evaluate_hypothyroidism(labs, patient):
     free_t4 = labs.get("free_t4")
 
     # 3. Check if values are abnormal
-    tsh_flag = is_elevated(tsh, THRESHOLDS["tsh_high_hypothyroid"])
+    tsh_flag = is_above(tsh, THRESHOLDS["tsh_high_hypothyroid"])
     t4_flag = is_below(free_t4, THRESHOLDS["free_t4_low_hypothyroid"])
 
     tsh_borderline_flag = in_range(
