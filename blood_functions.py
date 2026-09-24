@@ -378,11 +378,12 @@ def evaluate_hypothyroidism(labs, patient):
     # 2. Pull values from labs / patient
     tsh = labs.get("tsh")
     free_t4 = labs.get("free_t4")
+    tpo_ab = labs.get("tpo_ab")
 
     # 3. Check if values are abnormal
     tsh_flag = is_above(tsh, THRESHOLDS["tsh_high_hypothyroid"])
     t4_flag = is_below(free_t4, THRESHOLDS["free_t4_low_hypothyroid"])
-
+    tpo_ab_flag = is_elevated(tpo_ab,THRESHOLDS["TPOAB_UPPER_NORMAL"])
     tsh_borderline_flag = in_range(
         tsh, THRESHOLDS2["tsh_borderline_hypothyroid"][0],
         THRESHOLDS2["tsh_borderline_hypothyroid"][1]
@@ -395,14 +396,16 @@ def evaluate_hypothyroidism(labs, patient):
     # 4. Decide category
     triggered = []
     partial_triggered = []
-    if tsh_flag and t4_flag:
+    if tsh_flag and t4_flag and tpo_ab_flag:
         category = "Significant Pattern"
         _track(triggered, "tsh", tsh, THRESHOLDS["tsh_high_hypothyroid"], ">=", tsh_flag)
         _track(triggered, "free_t4", free_t4, THRESHOLDS["free_t4_low_hypothyroid"], "<", t4_flag)
-    elif tsh_borderline_flag and t4_normal_flag:
+        _track(triggered, "tpo_ab", tpo_ab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpo_ab_flag)
+    elif tsh_borderline_flag and t4_normal_flag and tpo_ab_flag:
         category = "Early Pattern"
         _track_range(triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hypothyroid"][0], THRESHOLDS2["tsh_borderline_hypothyroid"][1], tsh_borderline_flag)
         _track_range(triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
+        _track(triggered, "tpo_ab", tpo_ab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpo_ab_flag)    
     else:
         category = "Typical"
         if tsh_flag:
@@ -413,7 +416,7 @@ def evaluate_hypothyroidism(labs, patient):
             _track(partial_triggered, "free_t4", free_t4, THRESHOLDS["free_t4_low_hypothyroid"], "<", t4_flag)
         elif t4_normal_flag:
             _track_range(partial_triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
-
+        _track(partial_triggered, "tpo_ab", tpo_ab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpo_ab_flag) 
 
     return [{
         "Condition": "Hypothyroidism",
@@ -431,8 +434,9 @@ def evaluate_hyperthyroidism(labs, patient):
     tsh = labs.get("tsh")
     free_t4 = labs.get("free_t4")
     free_t3 = labs.get("free_t3")
-
+    tpo_ab = labs.get("tpo_ab")
     # 3. Check if values are abnormal
+    tpo_ab_flag = is_elevated(tpo_ab,THRESHOLDS["TPOAB_UPPER_NORMAL"])
     tsh_flag = is_below(tsh, THRESHOLDS["tsh_low_hyperthyroid"])
     t4_flag = is_above(free_t4, THRESHOLDS["free_t4_high_hyperthyroid"])
     t3_flag = is_above(free_t3, THRESHOLDS["free_t3_high_hyperthyroid"])
@@ -453,16 +457,19 @@ def evaluate_hyperthyroidism(labs, patient):
     # 4. Decide category
     triggered = []
     partial_triggered = []
-    if tsh_flag and t4_flag and t3_flag:
+    if tsh_flag and t4_flag and t3_flag and tpo_ab_flag:
         category = "Significant Pattern"
         _track(triggered, "tsh", tsh, THRESHOLDS["tsh_low_hyperthyroid"], "<", tsh_flag)
         _track(triggered, "free_t4", free_t4, THRESHOLDS["free_t4_high_hyperthyroid"], ">", t4_flag)
         _track(triggered, "free_t3", free_t3, THRESHOLDS["free_t3_high_hyperthyroid"], ">", t3_flag)
-    elif (tsh_borderline_flag or tsh_flag) and t4_normal_flag and t3_normal_flag:
+        _track(triggered, "tpo_ab", tpo_ab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpo_ab_flag)    
+    elif tsh_borderline_flag and t4_normal_flag and t3_normal_flag and tpo_ab_flag:
         category = "Early Pattern"
         _track_range(triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hyperthyroid"][0], THRESHOLDS2["tsh_borderline_hyperthyroid"][1], tsh_borderline_flag)
         _track_range(triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
         _track_range(triggered, "free_t3", free_t3, THRESHOLDS2["free_t3_range"][0], THRESHOLDS2["free_t3_range"][1], t3_normal_flag)
+        _track(triggered, "tpo_ab", tpo_ab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpo_ab_flag)    
+
     else:
         category = "Typical"
         if tsh_flag:
@@ -477,7 +484,8 @@ def evaluate_hyperthyroidism(labs, patient):
             _track(partial_triggered, "free_t3", free_t3, THRESHOLDS["free_t3_high_hyperthyroid"], ">", t3_flag)
         elif t3_normal_flag:
             _track_range(partial_triggered, "free_t3", free_t3, THRESHOLDS2["free_t3_range"][0], THRESHOLDS2["free_t3_range"][1], t3_normal_flag)
-
+        _track(partial_triggered, "tpo_ab", tpo_ab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpo_ab_flag)
+        
     return [{
         "Condition": "Hyperthyroidism",
         "Category": category,

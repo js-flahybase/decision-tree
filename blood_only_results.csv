@@ -1,11 +1,11 @@
 Domain,Condition,Category,DNA Marker(s),Blood Marker(s),Triggering PRS,Snapshot Category,All Blood Marker(s)
-Endocrine Health,Hypothyroidism,Typical,,,,Typical - nothing to act on,
+Endocrine Health,Hypothyroidism,Typical,,,,Typical - nothing to act on,tpo_ab=80.0 (>=5.61)
 Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothing to act on,"fasting_glucose=118.0 (>=99), hba1c=6.2 (>=5.6)"
-Endocrine Health,Hyperthyroidism,Typical,,,,Typical - nothing to act on,"tsh=0.15 (0.1-0.4), free_t4=2.1 (>1.8), free_t3=5.2 (>4.4)"
+Endocrine Health,Hyperthyroidism,Typical,,,,Typical - nothing to act on,"tsh=0.15 (0.1-0.4), free_t4=2.1 (>1.8), free_t3=5.2 (>4.4), tpo_ab=80.0 (>=5.61)"
 Cardiac Health,Coronary Artery Disease,Elevated susceptibility,,lpa=65.0 (>=50),,Worth acting on for prevention,lpa=65.0 (>=50)
 Respiratory Health,Asthma,Typical,,,,Typical - nothing to act on,"eosinophils=9.0 (>=0.5), crp=4.5 (>3)"
 Respiratory Health,Rhinitis,Typical,,,,Typical - nothing to act on,
-Digestive Health,NAFLD,Typical,,,,Typical - nothing to act on,"alt=41.0 (>30), triglycerides=260.0 (>=150), hdl_c=35.0 (<=40), non_hdl_c=235.0 (>160), fib4=1.5 (>=1.3)"
+Digestive Health,NAFLD,Typical,,,,Typical - nothing to act on,"alt=41.0 (>30), triglycerides=260.0 (>=150), hdl_c=35.0 (<=40), non_hdl_c=235.0 (>160), fib4=2.7 (>=1.3)"
 Digestive Health,Inflammatory Bowel Disease,Typical,,,,Typical - nothing to act on,esr=35.0 (>30)
 Digestive Health,Hereditary Hemochromatosis,Significant Pattern,,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)",,To discuss with General Practitioner,"transferrin_saturation=52.0 (>45), ferritin=380.0 (>300)"
 Skin Health,Eczema,Typical,,,,Typical - nothing to act on,"eosinophils=9.0 (>=1.5), crp=4.5 (>3)"

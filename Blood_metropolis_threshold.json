@@ -7,6 +7,7 @@
     "tsh_low_hyperthyroid": 0.1,
     "free_t4_high_hyperthyroid": 1.8,
     "free_t3_high_hyperthyroid": 4.4,
+    "TPOAB_UPPER_NORMAL": 5.61,
     "age_low": 25,
 
     "ldl_high": 160,
