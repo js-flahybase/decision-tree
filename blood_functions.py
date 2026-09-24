@@ -675,6 +675,7 @@ def evaluate_nafld(labs, patient):
         _track(partial_triggered, "hdl_c", hdl_c, hdl_threshold, "<=", hdl_c_flag)
         _track(partial_triggered, "non_hdl_c", non_hdl_c, THRESHOLDS["non_hdl_high"], ">", non_hdl_c_flag)
         _track(partial_triggered, "fib4", fib4, fib4_threshold, ">=", fib4_flag)
+        _track(partial_triggered, "fib4", fib4, THRESHOLDS["FIB4_ELEVATED"], ">=", fib4_high)
         _track(partial_triggered, "ast/alt ratio", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
 
     return [{
