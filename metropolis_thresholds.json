@@ -51,7 +51,7 @@
   "ALT_RANGE": [10, 31],
   "GGT_RANGE": [9, 36],
   "AST_ALT_RATIO_RANGE": [0.7, 2.2],
-  "FIB4_AT_RISK": 1.3,
+  "FIB4_AT_RISK": [1.3, 2],
   "FIB4_ELEVATED": 2.67,
   "ALBUMIN_RANGE": [3.5, 5.5],
 

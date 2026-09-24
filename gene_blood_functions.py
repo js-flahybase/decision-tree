@@ -881,6 +881,7 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
     if not has_flagged_gene(genetics, "NAFLD"):
         return [{"Condition": "NAFLD", "Category": GENE_NOT_FOUND}]
     
+    age = patient.get("age")
     fib4 = labs.get("fib4")
     ast = labs.get("ast")
     alt = labs.get("alt")
@@ -890,13 +891,13 @@ def evaluate_nafld(labs, patient, genetics, family_history, symptoms=False):
 
     triggered = []
     fib4_elevated = is_elevated(fib4, FIB4_ELEVATED)
-    fib4_at_risk = is_elevated(fib4, FIB4_AT_RISK)
-    # platelets_low = note(triggered, "platelets", platelets, is_below(platelets, PLATELETS_RANGE[0]), f"<{PLATELETS_RANGE[0]}") #removed in updated deck
+    fib4_at_risk = is_elevated(fib4, FIB4_AT_RISK[0]) if age < 65 else is_elevated(fib4, FIB4_AT_RISK[1])
     
     if fib4_elevated:
         note(triggered, "fib4", fib4, True, f">={FIB4_ELEVATED}")
     elif fib4_at_risk:
-        note(triggered, "fib4", fib4, True, f">={FIB4_AT_RISK}")
+        threshold = FIB4_AT_RISK[0] if age < 65 else FIB4_AT_RISK[1]
+        note(triggered, "fib4", fib4, True, f">={threshold}")
         
     ast_flag = note(triggered, "ast", ast, is_above(ast, AST_RANGE[1]), f">{AST_RANGE[1]}")
     alt_flag = note(triggered, "alt", alt, is_above(alt, ALT_RANGE[1]), f">{ALT_RANGE[1]}")

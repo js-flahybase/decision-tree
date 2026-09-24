@@ -631,15 +631,16 @@ def evaluate_nafld(labs, patient):
 
      # FIB-4 score: >= 1.30 (age 35-65), or >= 2.0 if age >= 65
     # fib4 = fib4_score(age, ast, platelets, alt)
-    fib4_threshold = THRESHOLDS["fib4_high_65_plus"] if (age is not None and age >= 65) else THRESHOLDS["fib4_high_35_65"]
+    fib4_threshold = THRESHOLDS2["fib4_high_65_plus"] if (age is not None and age >= 65) else THRESHOLDS2["fib4_high_35_65"]
     # fib4_flag = fib4 is not None and fib4 >= fib4_threshold
     fib4_flag = is_elevated(fib4, fib4_threshold)
+    fib4_high = is_elevated(fib4,THRESHOLDS["FIB4_ELEVATED"])
 
     # 4. Decide category
     triggered = []
     partial_triggered = []
     if (alt_flag and ast_alt_ratio_flag and ggt_flag and tg_flag
-            and hba1c_flag and hdl_c_flag and non_hdl_c_flag and fib4_flag):
+            and hba1c_flag and hdl_c_flag and non_hdl_c_flag and fib4_high):
         category = "Significant Pattern"
         _track(triggered, "alt", alt, alt_threshold, ">", alt_flag)
         _track(triggered, "ggt", ggt, THRESHOLDS["ggt_high"], ">", ggt_flag)
@@ -647,7 +648,7 @@ def evaluate_nafld(labs, patient):
         _track(triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high_nafld"], ">=", hba1c_flag)
         _track(triggered, "hdl_c", hdl_c, hdl_threshold, "<=", hdl_c_flag)
         _track(triggered, "non_hdl_c", non_hdl_c, THRESHOLDS["non_hdl_high"], ">", non_hdl_c_flag)
-        _track(triggered, "fib4", fib4, fib4_threshold, ">=", fib4_flag)
+        _track(triggered, "fib4", fib4, THRESHOLDS["FIB4_ELEVATED"], ">=", fib4_high)
         _track(triggered, "ast/alt ratio", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
     elif alt_flag and ast_alt_ratio_flag and fib4_flag and tg_flag and hdl_c_flag and hba1c_flag:
         category = "Early Pattern"
