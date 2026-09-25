@@ -1185,11 +1185,17 @@ def evaluate_t2d(labs, patient, genetics, family_history, symptoms=False):
 
     hyperglycemia = hba1c_elevated or fg_elevated
     hyperglycemia_early = hba1c_at_risk or fg_at_risk
-    insulin_resistance_flag = note(triggered, "fasting_insulin", fasting_insulin, is_above(fasting_insulin, FASTING_INSULIN_RANGE[1]), f">={FASTING_INSULIN_RANGE[1]}")
+    insulin_resistance_elevated = is_above(fasting_insulin, FASTING_INSULIN_RANGE[1])
+    insulin_resistance_early = is_above(fasting_insulin, FASTING_INSULIN_RANGE[0])
 
-    if (hyperglycemia) or (hyperglycemia and (symptoms or family_history)):
+    if insulin_resistance_elevated:
+        note(triggered, "fasting_insulin", fasting_insulin, True, f">{FASTING_INSULIN_RANGE[1]}")
+    elif insulin_resistance_early:
+        note(triggered, "fasting_insulin", fasting_insulin, True, f">{FASTING_INSULIN_RANGE[0]}")
+
+    if (hyperglycemia and insulin_resistance_elevated) or (hyperglycemia and insulin_resistance_elevated and (symptoms or family_history)):
         category = "Significant Pattern"
-    elif hyperglycemia_early and insulin_resistance_flag:
+    elif hyperglycemia_early and insulin_resistance_early:
         category = "Early Pattern"
     else:
         category = "Elevated susceptibility"

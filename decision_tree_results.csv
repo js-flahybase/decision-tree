@@ -13,14 +13,14 @@ Brain Health,Parkinson's Disease,Elevated susceptibility,,,Polygenic Risk Classi
 Skin Health,Psoriasis,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,"esr=35.0 (>20), crp=4.5 (>3.0)"
 Immune Health,Rheumatoid Arthritis,Significant Pattern,CTLA4,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), esr=35.0 (>20), crp=4.5 (>3.0)",,To discuss with General Practitioner,"ldl_c=205.0 (>=160), triglycerides=260.0 (>=200), hdl_c=35.0 (<40), esr=35.0 (>20), crp=4.5 (>3.0)"
 Respiratory Health,Rhinitis,Early Pattern,,eosinophils=9.0 (>0.4),Polygenic Risk Classification,To discuss with General Practitioner,eosinophils=9.0 (>0.4)
-Endocrine Health,Type 2 Diabetes,Typical,,,,Typical - nothing to act on,
+Endocrine Health,Type 2 Diabetes,Significant Pattern,,"hba1c=7.2 (>=6.5), fasting_glucose=157.0 (>=126), fasting_insulin=26.0 (>25)",Polygenic Risk Classification,To discuss with General Practitioner,"hba1c=7.2 (>=6.5), fasting_glucose=157.0 (>=126), fasting_insulin=26.0 (>25)"
 Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothing to act on,
 Muscle Health,Muscular Dystrophy,Typical,,,,Typical - nothing to act on,
 Kidney & Metabolic Health,Gilbert Syndrome,Early Pattern,UGT1A1,"total_bilirubin=1.6 (1.2-3), direct_bilirubin=0.9 (<1), indirect_bilirubin=0.9 (>0.8), alt=41.0 (<= 41), ast=35.0 (<= 35), alp=40.0 (40-129), ggt=13.0 (12-64)",,To discuss with General Practitioner,"total_bilirubin=1.6 (1.2-3), direct_bilirubin=0.9 (<1), indirect_bilirubin=0.9 (>0.8), alt=41.0 (<= 41), ast=35.0 (<= 35), alp=40.0 (40-129), ggt=13.0 (12-64)"
 Digestive Health,Hereditary Hemochromatosis,Typical,,,,Typical - nothing to act on,
 Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Typical - nothing to act on,
 Cardiac Health,Cardiomyopathy,Typical,,,,Typical - nothing to act on,
-Cardiac Health,Coronary Artery Disease,Significant Pattern,,"ldl_c=205.0 (>=160), non_hdl_c=235.0 (>=190), apob=145.0 (>=130), lpa=65.0 (>=50), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)",Polygenic Risk Classification,To discuss with General Practitioner,"ldl_c=205.0 (>=160), non_hdl_c=235.0 (>=190), apob=145.0 (>=130), lpa=65.0 (>=50), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=6.2 (>=5.7)"
+Cardiac Health,Coronary Artery Disease,Significant Pattern,,"ldl_c=205.0 (>=160), non_hdl_c=235.0 (>=190), apob=145.0 (>=130), lpa=65.0 (>=50), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=7.2 (>=6.5)",Polygenic Risk Classification,To discuss with General Practitioner,"ldl_c=205.0 (>=160), non_hdl_c=235.0 (>=190), apob=145.0 (>=130), lpa=65.0 (>=50), hdl_c=35.0 (<40), triglycerides=260.0 (>=150), hba1c=7.2 (>=6.5)"
 Cardiac Health,Familial Hypertriglyceridemia,Typical,,,,Typical - nothing to act on,
 Cardiac Health,HDL Deficiency,Typical,,,,Typical - nothing to act on,
 Cancer,Li-Fraumeni Syndrome,Typical,,,,Typical - nothing to act on,
