@@ -5,8 +5,8 @@ ldl_c,205
 non_hdl_c,235
 hdl_c,35
 triglycerides,260
-fasting_glucose,118
-hba1c,6.2
+fasting_glucose,157
+hba1c,7.2
 crp,4.5
 eosinophils,9
 tsh,0.15
@@ -30,3 +30,4 @@ total_bilirubin,1.6
 direct_bilirubin,0.9
 indirect_bilirubin,0.9
 fib4,2.7
+fasting_insulin,36
