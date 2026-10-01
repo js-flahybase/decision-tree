@@ -565,7 +565,13 @@ def evaluate_asthma(labs, patient, symptoms, family_history, past_history):
     # 4. Decide category
     triggered = []
     partial_triggered = []
-    if eos_flag and ige_flag and neutrophils_flag and crp_flag or (eos_flag and ige_flag and neutrophils_flag and crp_flag and (symptoms or family_history or past_history)):
+    if eos_flag and ige_flag and neutrophils_flag and crp_flag and (symptoms or family_history or past_history):
+        category = "Early Pattern"
+        _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+        _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+        _track(triggered, "neutrophils", neutrophils, THRESHOLDS["neutrophils_high"], ">=", neutrophils_flag)
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_resp"], ">", crp_flag)
+    elif eos_flag and ige_flag and neutrophils_flag and crp_flag :
         category = "Elevated susceptibility"
         _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
         _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
@@ -599,7 +605,11 @@ def evaluate_allergic_rhinitis(labs, patient, symptoms, family_history, past_his
     # 4. Decide category
     triggered = []
     partial_triggered = []
-    if eos_flag and ige_flag or (eos_flag and ige_flag and (symptoms or family_history or past_history)):
+    if eos_flag and ige_flag and (symptoms or family_history or past_history):
+            category = "Early Pattern"
+            _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+            _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+    elif eos_flag and ige_flag:
             category = "Elevated susceptibility"
             _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
             _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
