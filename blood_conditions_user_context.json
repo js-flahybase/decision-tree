@@ -15,6 +15,14 @@
       "Visuospatial problems",
       "Personality or mood change",
       "Loss of walking, speaking, and swallowing"
+    ],
+    "past_history": [
+      "Traumatic brain injury after age 50",
+      "Down syndrome",
+      "Dementia",
+      "Heart disease",
+      "Diabetes",
+      "Stroke"
     ]
   },
   "Asthma": {
@@ -31,6 +39,13 @@
       "Chest tightness",
       "Nocturnal symptoms",
       "Allergen, infection, exercise or cold air driven attacks"
+    ],
+    "past_history": [
+      "Chronic sinusitis",
+      " Nasal polyps",
+       "Gastroesophageal reflux disease (GERD)",
+      "Obesity",
+      "Allergens (dust mites, pollen, pets, mold, cockroaches)"
     ]
   },
   "Atopic Dermatitis": {
@@ -46,6 +61,12 @@
       "Lesions in flexural areas (elbow creases, behind knees)",
       "Dry skin",
       "Sleep-disrupting itch"
+    ],
+    "past_history": [
+      "Eczema",
+      "Asthma", 
+      "Allergic Rhinitis (hay fever)", 
+      "Food allergies"
     ]
   },
   "Eczema": {
@@ -63,6 +84,12 @@
       "Lesions in flexural areas",
       "Lesions on exposed areas",
       "Flares triggered by irritants, allergens or stress"
+    ],
+    "past_history": [
+      "Eczema",
+      "Asthma", 
+      "Allergic Rhinitis (hay fever)", 
+      "Food allergies"
     ]
   },
   "COPD": {
@@ -77,6 +104,12 @@
       "Chest tightness",
       "Frequent respiratory infections",
       "Fatigue"
+    ],
+    "past_history": [
+      "Smoking",
+      "Respiratory infections",
+      "Asthma",
+      "Underdeveloped lungs"
     ]
   },
   "Hyperthyroidism": {
@@ -96,7 +129,15 @@
       "Increased sweating",
       "Goiter",
       "Eye signs (ophthalmopathy)"
-    ]
+    ],
+    "past_history": [
+        "Graves' disease",
+        "Thyroid nodules",
+        "Thyroiditis",
+        "Postpartum thyroiditis",
+        "TSH-secreting pituitary adenoma (thyrotropinoma)",
+        "Excess iodine"
+]
   },
   "Hypothyroidism": {
     "family_history": [
@@ -113,6 +154,13 @@
       "Menstrual irregularities",
       "Bradycardia",
       "Cognitive slowing"
+    ],
+    "past_history": [
+      "Thyroid problem before",
+      "Surgery to correct a thyroid problem",
+      "Received radiation treatment to the thyroid, neck, or chest",
+      "Postpartum period (within 6 months after delivery)",
+      "Turner syndrome"
     ]
   },
   "IBD": {
@@ -127,7 +175,13 @@
       "Rectal bleeding",
       "Joint pain or arthritis",
       "Skin inflammation",
-      "Eye inflammation"
+      "Eye inflammation",
+     "Diarrhoea, with blood and mucus"
+    ],
+    "past_history": [
+      "Previous intestinal infection",     
+      "Previous tuberculosis (TB) and known TB contacts",       
+      "Previous bowel surgery (including appendicectomy)"
     ]
   },
   "NAFLD": {
@@ -141,6 +195,13 @@
     "symptoms": [
       "Fatigue",
       "Right upper-quadrant discomfort"
+    ],
+    "past_history": [
+      "Obesity",
+      "Type 2 diabetes",
+      "Dyslipidemia",
+      "Hypertension",
+      "Metabolic syndrome"
     ]
   },
   "Osteoarthritis": {
@@ -154,6 +215,13 @@
       "Crepitus",
       "Joint swelling",
       "Bony enlargement"
+    ],
+    "past_history": [
+      "Obesity",
+      "Joint Injury",
+      "Joint malalignment",
+      "Knee malalignment",
+      "Quadriceps weakness"
     ]
   },
   "Parkinson's Disease": {
@@ -170,6 +238,11 @@
       "Constipation",
       "Sleep disturbance",
       "Anosmia"
+    ],
+    "past_history": [
+      "Pesticide and Herbicide Exposure",
+      "Head Trauma",
+      "Industrial Solvents like Trichloroethylene"
     ]
   },
   "Psoriasis": {
@@ -182,6 +255,11 @@
       "Nail pitting",
       "Onycholysis",
       "Inflammatory arthritis"
+    ],
+    "past_history": [
+      "Obesity",
+      "Insulin resistance",
+      "Dysbiosis"
     ]
   },
   "Rheumatoid Arthritis": {
@@ -197,6 +275,9 @@
       "Nodules",
       "Lung involvement",
       "Eye involvement"
+    ],
+    "past_history": [
+      "Obesity"
     ]
   },
   "Rhinitis": {
@@ -212,6 +293,12 @@
       "Nasal congestion",
       "Postnasal drip",
       "Itchy, watery eyes"
+    ],
+    "past_history": ["Asthma",
+      "Eczema",
+      "Allergy",
+      "Nasal polyps",
+      "Sinusitis"
     ]
   },
   "Type 2 Diabetes": {
@@ -227,6 +314,13 @@
       "Blurred vision",
       "Recurrent infections",
       "Slow wound healing"
+    ],
+    "past_history": [
+      "obesity",
+      "History of gestational diabetes",
+      "Delivery of a baby >4.1 kg",
+      "Prediabetes or impaired glucose tolerance",
+      "Cardiovascular disease (heart attack, stroke, peripheral artery disease)"
     ]
   },
   "MODY": {
@@ -235,6 +329,14 @@
         "Diabetes mellitus",
         "Early-onset diabetes",
         "Juvenile diabetes"
+    ],
+    "symptoms": [
+      "Polyuria (frequent urination)",
+      "Polydipsia (excessive thirst)",
+      "Fatigue",
+      "Blurred vision",
+      "Recurrent infections",
+      "Weight loss"
     ]
   },
   "Muscular Dystrophy": {
@@ -311,6 +413,17 @@
         "Premature heart disease",
         "Early heart attack",
         "Cardiac arrest"
+    ],
+    "symptoms": [
+        "Bumps or lumps around knees, knuckles, or elbows",
+        "Swollen or painful Achilles tendon",
+        "Yellowish areas around your eyes",
+        "Arcus senilis"
+    ],
+    "past_history": [
+        "Diabetes", 
+        "Xanthomatosis",
+        "Cardiovascular disease"
     ]
   },
   "Cardiomyopathy": {
@@ -349,6 +462,14 @@
         "Diffuse subendocardial or global LGE (e.g. amyloid pattern)",
         "RV aneurysm (inferior, apical, or infundibular)",
         "Fibrofatty replacement of RV myocardium on MRI"
+    ],
+    "past_history": [
+        "Heart inflammation",
+        "Diabetes",
+        "Obesity",
+        "Duchenne muscular dystrophy",
+        "Sarcoidosis or Amyloidosis",
+        "Arrhythmia"
     ]
   },
   "Coronary Artery Disease": {
@@ -362,6 +483,13 @@
         "Coronary artery disease",
         "Ischemic heart disease",
         "Cardiac arrest"
+    ],
+    "past_history": [
+      "Atherosclerosis",
+      "Obesity",
+      "Chronic stress",
+      "History of gestational diabetes, preeclampsia, or early menopause (<40 years)",
+      "Smoking (current or past)"
     ]
   },
   "Familial Hypertriglyceridemia": {
@@ -369,6 +497,11 @@
         "Familial hypertriglyceridemia",
         "Hypertriglyceridemia",
         "Pancreatitis"
+    ],
+    "past_history": [
+        "Recurrent abdominal pain",
+        "Pancreatitis",
+        "Eruptive xanthomas"
     ]
   },
   "HDL Deficiency": {
@@ -378,6 +511,12 @@
         "Hypoalphalipoproteinemia",
         "Tangier disease",
         "Premature coronary artery disease"
+    ],
+    "past_history": [
+        "Obesity",
+        "Metabolic syndrome",
+        "Type 2 diabetes / insulin resistance",
+        "Hypothyroidism"
     ]
   },
   "Li-Fraumeni Syndrome": {
