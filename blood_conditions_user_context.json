@@ -42,8 +42,8 @@
     ],
     "past_history": [
       "Chronic sinusitis",
-      " Nasal polyps",
-       "Gastroesophageal reflux disease (GERD)",
+      "Nasal polyps",
+      "Gastroesophageal reflux disease (GERD)",
       "Obesity",
       "Allergens (dust mites, pollen, pets, mold, cockroaches)"
     ]
@@ -86,7 +86,7 @@
       "Flares triggered by irritants, allergens or stress"
     ],
     "past_history": [
-      "Eczema",
+      "Atopic dermatitis",
       "Asthma", 
       "Allergic Rhinitis (hay fever)", 
       "Food allergies"
@@ -242,7 +242,7 @@
     "past_history": [
       "Pesticide and Herbicide Exposure",
       "Head Trauma",
-      "Industrial Solvents like Trichloroethylene"
+      "Exposure to industrial solvents like Trichloroethylene"
     ]
   },
   "Psoriasis": {
@@ -316,7 +316,7 @@
       "Slow wound healing"
     ],
     "past_history": [
-      "obesity",
+      "Obesity",
       "History of gestational diabetes",
       "Delivery of a baby >4.1 kg",
       "Prediabetes or impaired glucose tolerance",
