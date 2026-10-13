@@ -280,8 +280,8 @@ FERRITIN_ELEVATED_MALE = _t("FERRITIN_ELEVATED_MALE")             # ng/mL (Hemoc
 FERRITIN_ELEVATED_FEMALE = _t("FERRITIN_ELEVATED_FEMALE")         # ng/mL (Hemochromatosis)
 TRANSFERRIN_SATURATION_ELEVATED = _t("TRANSFERRIN_SATURATION_ELEVATED")  # % (Hemochromatosis)
 HEMOGLOBIN_UPPER_HEMOCHROMATOSIS = _t("HEMOGLOBIN_UPPER_HEMOCHROMATOSIS")  # g/dL
-MCV_UPPER_HEMOCHROMATOSIS = _t("MCV_UPPER_HEMOCHROMATOSIS")       # fL
-MCH_UPPER_HEMOCHROMATOSIS = _t("MCH_UPPER_HEMOCHROMATOSIS")       # pg
+# MCV_UPPER_HEMOCHROMATOSIS = _t("MCV_UPPER_HEMOCHROMATOSIS")       # fL
+# MCH_UPPER_HEMOCHROMATOSIS = _t("MCH_UPPER_HEMOCHROMATOSIS")       # pg
 # VITAMIN_D_DEFICIENT = 20                       # ng/mL (Celiac)
 # MCV_LOWER_CELIAC = 82                          # fL
 # MCH_LOWER_CELIAC = 27                          # pg
@@ -570,9 +570,9 @@ def evaluate_alzheimers(labs, patient, genetics, family_history, past_history, s
     total_c_likely = is_elevated(total_c, TOTAL_CHOLESTEROL_ELEVATED)
     total_c_early = is_elevated(total_c, TOTAL_CHOLESTEROL_AT_RISK)
     if total_c_likely:
-        note(triggered, "total_c", total_c, True, f">={TOTAL_CHOLESTEROL_ELEVATED}")
+        note(triggered, "total_cholesterol", total_c, True, f">={TOTAL_CHOLESTEROL_ELEVATED}")
     elif total_c_early:
-        note(triggered, "total_c", total_c, True, f">={TOTAL_CHOLESTEROL_AT_RISK}")
+        note(triggered, "total_cholesterol", total_c, True, f">={TOTAL_CHOLESTEROL_AT_RISK}")
 
     # --- Triglycerides ---
     tg_likely = is_elevated(triglycerides, TRIGLYCERIDES_ELEVATED)
@@ -769,20 +769,20 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, past_histo
     free_t4_normal = free_t4 is not None and FREE_T4_RANGE[0] <= free_t4 <= FREE_T4_RANGE[1]
 
     hormone_flag = free_t3_flag or free_t4_flag
-    hormone_normal = free_t3_normal and free_t4_normal 
+    hormone_normal = free_t3_normal and free_t4_normal
 
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
-    # Elevated T3/T4 always reported, normal ones only reported when TSH or TPOAb is flagged.
+    # only elevated T3/T4 reported, normal ones only used in logic and not reported.
     if free_t3_flag:
         note(triggered, "free_t3", free_t3, True, f">{FREE_T3_RANGE[1]}")
-    elif free_t3_normal and (tsh_suppressed or tpoab_flag):
-        note(triggered, "free_t3", free_t3, True, f"({FREE_T3_RANGE[0]}-{FREE_T3_RANGE[1]})")
+    # elif free_t3_normal and (tsh_suppressed or tpoab_flag):
+    #     note(triggered, "free_t3", free_t3, True, f"({FREE_T3_RANGE[0]}-{FREE_T3_RANGE[1]})")
 
     if free_t4_flag:
         note(triggered, "free_t4", free_t4, True, f">{FREE_T4_RANGE[1]}")
-    elif free_t4_normal and (tsh_suppressed or tpoab_flag):
-        note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
+    # elif free_t4_normal and (tsh_suppressed or tpoab_flag):
+    #     note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
 
     if (tsh_suppressed and hormone_flag and tpoab_flag) or (tsh_suppressed and hormone_flag and tpoab_flag and (symptoms or family_history or past_history)):
         category = "Significant Pattern"
@@ -815,18 +815,18 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, past_histor
     if tsh_high:
         note(triggered, "tsh", tsh, True, f">{TSH_ELEVATED_RANGE[1]}")
     elif tsh_mild:
-        note(triggered, "tsh", tsh, True, f"({TSH_ELEVATED_RANGE[0]}-{TSH_ELEVATED_RANGE[1]}]")
+        note(triggered, "tsh", tsh, True, f"[{TSH_ELEVATED_RANGE[0]}-{TSH_ELEVATED_RANGE[1]}]")
     
     # free_t3_flag = note(triggered, "free_t3", free_t3, is_below(free_t3, FREE_T3_ELEVATED), f"<{FREE_T3_ELEVATED}") #unused in triggers
     free_t4_flag = is_below(free_t4, FREE_T4_RANGE[0])
     free_t4_normal = free_t4 is not None and FREE_T4_RANGE[0] <= free_t4 <= FREE_T4_RANGE[1]
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
-    # Low T4 always reported, normal one only reported when TSH or TPOAb is flagged.
+    # Only low T4 reported, normal T4 only used in logic, not reported 
     if free_t4_flag:
         note(triggered, "free_t4", free_t4, True, f"<{FREE_T4_RANGE[0]}")
-    elif free_t4_normal and (tsh_high or tsh_mild or tpoab_flag):
-        note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
+    # elif free_t4_normal and (tsh_high or tsh_mild or tpoab_flag):
+    #     note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
 
     if (tsh_high and free_t4_flag and tpoab_flag) or (tsh_high and free_t4_flag and tpoab_flag and (symptoms or family_history or past_history)):
         category = "Significant Pattern"
@@ -972,9 +972,9 @@ def evaluate_parkinsons(labs, patient, genetics, family_history, past_history, s
     total_c_likely = is_elevated(total_c, TOTAL_CHOLESTEROL_ELEVATED)
     total_c_early = is_elevated(total_c, TOTAL_CHOLESTEROL_AT_RISK)
     if total_c_likely:
-        note(triggered, "total_c", total_c, True, f">={TOTAL_CHOLESTEROL_ELEVATED}")
+        note(triggered, "total_cholesterol", total_c, True, f">={TOTAL_CHOLESTEROL_ELEVATED}")
     elif total_c_early:
-        note(triggered, "total_c", total_c, True, f">={TOTAL_CHOLESTEROL_AT_RISK}")
+        note(triggered, "total_cholesterol", total_c, True, f">={TOTAL_CHOLESTEROL_AT_RISK}")
 
     # --- Triglycerides ---
     tg_likely = is_elevated(triglycerides, TRIGLYCERIDES_ELEVATED)
@@ -1090,9 +1090,9 @@ def evaluate_rheumatoid_arthritis(labs, patient, genetics, family_history, past_
     total_c_likely = is_elevated(total_c, TOTAL_CHOLESTEROL_ELEVATED)
     total_c_early = is_elevated(total_c, TOTAL_CHOLESTEROL_AT_RISK)
     if total_c_likely:
-        note(triggered, "total_c", total_c, True, f">={TOTAL_CHOLESTEROL_ELEVATED}")
+        note(triggered, "total_cholesterol", total_c, True, f">={TOTAL_CHOLESTEROL_ELEVATED}")
     elif total_c_early:
-        note(triggered, "total_c", total_c, True, f">={TOTAL_CHOLESTEROL_AT_RISK}")
+        note(triggered, "total_cholesterol", total_c, True, f">={TOTAL_CHOLESTEROL_AT_RISK}")
 
     # --- Triglycerides ---
     tg_likely = is_elevated(triglycerides, TRIGLYCERIDES_ELEVATED)
@@ -1780,12 +1780,12 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
     alp_normal = is_elevated(alp, ALP_RANGE[0]) and is_low(alp, ALP_RANGE[1])
     ggt_normal = is_elevated(ggt, GGT_LFT_RANGE[0]) and is_low(ggt, GGT_LFT_RANGE[1])
 
-    # normal enzymes only noted when billirubin is flagged
-    if total_bilirubin_early or total_bilirubin_elevated or direct_bilirubin_flag or indirect_bilirubin_flag:
-        note(triggered, "alt", alt, alt_normal, f"<= {ALT_UPPER}")
-        note(triggered, "ast", ast, ast_normal, f"<= {AST_UPPER}")
-        note(triggered, "alp", alp, alp_normal, f"{ALP_RANGE[0]}-{ALP_RANGE[1]}")
-        note(triggered, "ggt", ggt, ggt_normal, f"{GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}")
+    # normal enzymes only used in logic and not reported
+    # if total_bilirubin_early or total_bilirubin_elevated or direct_bilirubin_flag or indirect_bilirubin_flag:
+    #     note(triggered, "alt", alt, alt_normal, f"<= {ALT_UPPER}")
+    #     note(triggered, "ast", ast, ast_normal, f"<= {AST_UPPER}")
+    #     note(triggered, "alp", alp, alp_normal, f"{ALP_RANGE[0]}-{ALP_RANGE[1]}")
+    #     note(triggered, "ggt", ggt, ggt_normal, f"{GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}")
 
     # noting down logic updated, 
     # trigger logic unchanged — all 7 must be True together
