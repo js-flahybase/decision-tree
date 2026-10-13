@@ -768,20 +768,21 @@ def evaluate_hyperthyroidism(labs, patient, genetics, family_history, past_histo
     free_t4_flag = is_above(free_t4, FREE_T4_RANGE[1])
     free_t4_normal = free_t4 is not None and FREE_T4_RANGE[0] <= free_t4 <= FREE_T4_RANGE[1]
 
-    if free_t3_flag:
-        note(triggered, "free_t3", free_t3, True, f">{FREE_T3_RANGE[1]}")
-    elif free_t3_normal:
-        note(triggered, "free_t3", free_t3, True, f"({FREE_T3_RANGE[0]}-{FREE_T3_RANGE[1]})")
-
-    if free_t4_flag:
-        note(triggered, "free_t4", free_t4, True, f">{FREE_T4_RANGE[1]}")
-    elif free_t4_normal:
-        note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
-
     hormone_flag = free_t3_flag or free_t4_flag
     hormone_normal = free_t3_normal and free_t4_normal 
 
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
+
+    # Elevated T3/T4 always reported, normal ones only reported when TSH or TPOAb is flagged.
+    if free_t3_flag:
+        note(triggered, "free_t3", free_t3, True, f">{FREE_T3_RANGE[1]}")
+    elif free_t3_normal and (tsh_suppressed or tpoab_flag):
+        note(triggered, "free_t3", free_t3, True, f"({FREE_T3_RANGE[0]}-{FREE_T3_RANGE[1]})")
+
+    if free_t4_flag:
+        note(triggered, "free_t4", free_t4, True, f">{FREE_T4_RANGE[1]}")
+    elif free_t4_normal and (tsh_suppressed or tpoab_flag):
+        note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
 
     if (tsh_suppressed and hormone_flag and tpoab_flag) or (tsh_suppressed and hormone_flag and tpoab_flag and (symptoms or family_history or past_history)):
         category = "Significant Pattern"
@@ -803,25 +804,28 @@ def evaluate_hypothyroidism(labs, patient, genetics, family_history, past_histor
         return [{"Condition": "Hypothyroidism", "Category": GENE_NOT_FOUND}]
 
     tsh = labs.get("tsh")
-    free_t3 = labs.get("free_t3")
+    # free_t3 = labs.get("free_t3")
     free_t4 = labs.get("free_t4")
     tpoab = labs.get("tpoab")
 
     triggered = []
     tsh_high = is_above(tsh, TSH_ELEVATED_RANGE[1])
-    tsh_mild = tsh is not None and TSH_ELEVATED_RANGE[0] <= tsh <= TSH_ELEVATED_RANGE[1]
+    # tsh_mild = tsh is not None and TSH_ELEVATED_RANGE[0] <= tsh <= TSH_ELEVATED_RANGE[1] #this had an edge case
+    tsh_mild = is_elevated(tsh, TSH_ELEVATED_RANGE[0])
     if tsh_high:
         note(triggered, "tsh", tsh, True, f">{TSH_ELEVATED_RANGE[1]}")
     elif tsh_mild:
         note(triggered, "tsh", tsh, True, f"({TSH_ELEVATED_RANGE[0]}-{TSH_ELEVATED_RANGE[1]}]")
+    
     # free_t3_flag = note(triggered, "free_t3", free_t3, is_below(free_t3, FREE_T3_ELEVATED), f"<{FREE_T3_ELEVATED}") #unused in triggers
     free_t4_flag = is_below(free_t4, FREE_T4_RANGE[0])
     free_t4_normal = free_t4 is not None and FREE_T4_RANGE[0] <= free_t4 <= FREE_T4_RANGE[1]
     tpoab_flag = note(triggered, "tpoab", tpoab, is_elevated(tpoab, TPOAB_UPPER_NORMAL), f">={TPOAB_UPPER_NORMAL}")
 
+    # Low T4 always reported, normal one only reported when TSH or TPOAb is flagged.
     if free_t4_flag:
         note(triggered, "free_t4", free_t4, True, f"<{FREE_T4_RANGE[0]}")
-    elif free_t4_normal:
+    elif free_t4_normal and (tsh_high or tsh_mild or tpoab_flag):
         note(triggered, "free_t4", free_t4, True, f"({FREE_T4_RANGE[0]}-{FREE_T4_RANGE[1]})")
 
     if (tsh_high and free_t4_flag and tpoab_flag) or (tsh_high and free_t4_flag and tpoab_flag and (symptoms or family_history or past_history)):
@@ -1770,12 +1774,20 @@ def evaluate_gilbert_syndrome(labs, patient, genetics, family_history, past_hist
 
     direct_bilirubin_flag = note(triggered, "direct_bilirubin", direct_bilirubin, is_below(direct_bilirubin, DIRECT_BILIRUBIN_LOWER), f"<{DIRECT_BILIRUBIN_LOWER}")
     indirect_bilirubin_flag = note(triggered, "indirect_bilirubin", indirect_bilirubin, is_above(indirect_bilirubin, INDIRECT_BILIRUBIN_UPPER), f">{INDIRECT_BILIRUBIN_UPPER}")
-    alt_normal = note(triggered, "alt", alt, is_low(alt, ALT_UPPER), f"<= {ALT_UPPER}")
-    ast_normal = note(triggered, "ast", ast, is_low(ast, AST_UPPER), f"<= {AST_UPPER}")
-    alp_normal = note(triggered, "alp", alp, is_elevated(alp, ALP_RANGE[0]) and is_low(alp, ALP_RANGE[1]), f"{ALP_RANGE[0]}-{ALP_RANGE[1]}")
-    ggt_normal = note(triggered, "ggt", ggt, is_elevated(ggt, GGT_LFT_RANGE[0]) and is_low(ggt, GGT_LFT_RANGE[1]), f"{GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}")
+    
+    alt_normal = is_low(alt, ALT_UPPER)
+    ast_normal = is_low(ast, AST_UPPER)
+    alp_normal = is_elevated(alp, ALP_RANGE[0]) and is_low(alp, ALP_RANGE[1])
+    ggt_normal = is_elevated(ggt, GGT_LFT_RANGE[0]) and is_low(ggt, GGT_LFT_RANGE[1])
 
-    # noting down logic updated, all 7 individually noted down if triggered accordingly
+    # normal enzymes only noted when billirubin is flagged
+    if total_bilirubin_early or total_bilirubin_elevated or direct_bilirubin_flag or indirect_bilirubin_flag:
+        note(triggered, "alt", alt, alt_normal, f"<= {ALT_UPPER}")
+        note(triggered, "ast", ast, ast_normal, f"<= {AST_UPPER}")
+        note(triggered, "alp", alp, alp_normal, f"{ALP_RANGE[0]}-{ALP_RANGE[1]}")
+        note(triggered, "ggt", ggt, ggt_normal, f"{GGT_LFT_RANGE[0]}-{GGT_LFT_RANGE[1]}")
+
+    # noting down logic updated, 
     # trigger logic unchanged — all 7 must be True together
     parameter_elevated = (
         total_bilirubin_elevated and
