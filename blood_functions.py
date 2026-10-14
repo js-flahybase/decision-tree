@@ -77,10 +77,12 @@ CONDITION_DOMAINS = {
 }
 
 
-def _map_category_message(category: str) -> str:
+def _map_category_message(category: str, all_markers: str = "") -> str:
     if category in ("Significant Pattern", "Early Pattern"):
         return "To discuss with General Practitioner"
     elif category == "Elevated susceptibility":
+        return "Worth acting on for prevention"
+    elif category == "Typical" and all_markers.strip():
         return "Worth acting on for prevention"
     else:
         return "Typical - nothing to act on"
@@ -1068,11 +1070,11 @@ def process_csv(input_path: str, output_path: str) -> None:
                 continue
             cat = r["Category"]
             domain = CONDITION_DOMAINS.get(r["Condition"], "General Health")
-            mapped_category = _map_category_message(cat)
+            
             
             blood_marker = r.get("TriggeredValues", "") if cat in {"Significant Pattern", "Early Pattern", "Elevated susceptibility"} else ""
             all_markers = r.get("TriggeredValues") or r.get("PartialTriggered") or ""
-
+            mapped_category = _map_category_message(cat, all_markers)
             rows_out.append({
                 "Domain": domain,
                 "Condition": r["Condition"],
