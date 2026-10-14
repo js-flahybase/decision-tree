@@ -425,8 +425,8 @@ def evaluate_hypothyroidism(labs, patient, symptoms, family_history, past_histor
             _track_range(partial_triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hypothyroid"][0], THRESHOLDS2["tsh_borderline_hypothyroid"][1], tsh_borderline_flag)
         if t4_flag:
             _track(partial_triggered, "free_t4", free_t4, THRESHOLDS["free_t4_low_hypothyroid"], "<", t4_flag)
-        elif t4_normal_flag:
-            _track_range(partial_triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
+        # elif t4_normal_flag:
+        #     _track_range(partial_triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
         _track(partial_triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag) 
 
     return [{
@@ -488,12 +488,12 @@ def evaluate_hyperthyroidism(labs, patient, symptoms, family_history, past_histo
             _track_range(partial_triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hyperthyroid"][0], THRESHOLDS2["tsh_borderline_hyperthyroid"][1], tsh_borderline_flag)
         if t4_flag:
             _track(partial_triggered, "free_t4", free_t4, THRESHOLDS["free_t4_high_hyperthyroid"], ">", t4_flag)
-        elif t4_normal_flag:
-            _track_range(partial_triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
+        # elif t4_normal_flag:
+        #     _track_range(partial_triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
         if t3_flag:
             _track(partial_triggered, "free_t3", free_t3, THRESHOLDS["free_t3_high_hyperthyroid"], ">", t3_flag)
-        elif t3_normal_flag:
-            _track_range(partial_triggered, "free_t3", free_t3, THRESHOLDS2["free_t3_range"][0], THRESHOLDS2["free_t3_range"][1], t3_normal_flag)
+        # elif t3_normal_flag:
+        #     _track_range(partial_triggered, "free_t3", free_t3, THRESHOLDS2["free_t3_range"][0], THRESHOLDS2["free_t3_range"][1], t3_normal_flag)
         _track(partial_triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag)
         
     return [{
@@ -680,11 +680,11 @@ def evaluate_nafld(labs, patient, symptoms, family_history, past_history):
         _track(triggered, "hdl_c", hdl_c, hdl_threshold, "<=", hdl_c_flag)
         _track(triggered, "non_hdl_c", non_hdl_c, THRESHOLDS["non_hdl_high"], ">", non_hdl_c_flag)
         _track(triggered, "fib4", fib4, THRESHOLDS["FIB4_ELEVATED"], ">=", fib4_high)
-        _track(triggered, "ast/alt ratio", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
+        _track(triggered, "ast/alt", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
     elif (alt_flag and ast_alt_ratio_flag and fib4_flag and tg_flag and hdl_c_flag and hba1c_flag) or (alt_flag and ast_alt_ratio_flag and fib4_flag and tg_flag and hdl_c_flag and hba1c_flag and (symptoms or family_history or past_history)):
         category = "Early Pattern"
         _track(triggered, "alt", alt, alt_threshold, ">", alt_flag)
-        _track(triggered, "ast/alt ratio", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
+        _track(triggered, "ast/alt", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
         _track(triggered, "fib4", fib4, fib4_threshold, ">=", fib4_flag)
         _track(triggered, "triglycerides", triglycerides, THRESHOLDS["triglycerides_high"], ">=", tg_flag)
         _track(triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high_nafld"], ">=", hba1c_flag)
@@ -699,7 +699,7 @@ def evaluate_nafld(labs, patient, symptoms, family_history, past_history):
         _track(partial_triggered, "non_hdl_c", non_hdl_c, THRESHOLDS["non_hdl_high"], ">", non_hdl_c_flag)
         _track(partial_triggered, "fib4", fib4, fib4_threshold, ">=", fib4_flag)
         _track(partial_triggered, "fib4", fib4, THRESHOLDS["FIB4_ELEVATED"], ">=", fib4_high)
-        _track(partial_triggered, "ast/alt ratio", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
+        _track(partial_triggered, "ast/alt", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
 
     return [{
         "Condition": "NAFLD",
@@ -954,8 +954,7 @@ PATIENT_COLUMNS = {"patient_id", "sex", "age"}
 # Only these categories are written to the output. Anything else
 # (i.e. "" / no pattern met) is filtered out of the report.
 OUTPUT_FIELDNAMES = ["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)"]
-# VISIBLE_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated susceptibility", "Typical"}
-VISIBLE_CATEGORIES = {"Significant Pattern", "Typical", "Elevated susceptibility"}
+VISIBLE_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated susceptibility", "Typical"}
 # Columns that indicate a "long format" CSV (one row per lab parameter,
 # rather than one column per lab). If both are present we pivot the
 # rows into one wide record per patient before evaluating.
