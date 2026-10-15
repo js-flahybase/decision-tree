@@ -94,7 +94,7 @@ def _to_float(value) -> Optional[float]:
         return None
     if isinstance(value, (int, float)):
         return float(value)
-    value = str(value).strip()
+    value = str(value).strip().replace(",", "")
     if value == "" or value.lower() in ("na", "n/a", "none", "null"):
         return None
     try:
@@ -369,16 +369,16 @@ def evaluate_maturity_onset_diabetes_of_the_young(labs, patient, symptoms, famil
             _track(triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_MODY"], ">=", hba1c_borderline_flag)
     else:
         category = "Typical"
-        _track(partial_triggered, "age", age, THRESHOLDS["age_low"], "<", age_flag)
-        if fpg_flag:
-            _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
-        elif fpg_borderline_flag:
-            _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_high_MODY"], ">=", fpg_borderline_flag)
-        if hba1c_flag:
-            _track(partial_triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
-        elif hba1c_borderline_flag:
-            _track(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_MODY"], ">=", hba1c_borderline_flag)
-
+        if age_flag:
+            if fpg_flag:
+                _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
+            elif fpg_borderline_flag:
+                _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_high_MODY"], ">=", fpg_borderline_flag)
+            if hba1c_flag:
+                _track(partial_triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
+            elif hba1c_borderline_flag:
+                _track(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_MODY"], ">=", hba1c_borderline_flag)
+    
     return [{
         "Condition": "Maturity-Onset Diabetes of the Young",
         "Category": category,
@@ -955,7 +955,7 @@ PATIENT_COLUMNS = {"patient_id", "sex", "age"}
 
 # Only these categories are written to the output. Anything else
 # (i.e. "" / no pattern met) is filtered out of the report.
-OUTPUT_FIELDNAMES = ["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)"]
+OUTPUT_FIELDNAMES = ["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p"]
 VISIBLE_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated susceptibility", "Typical"}
 # Columns that indicate a "long format" CSV (one row per lab parameter,
 # rather than one column per lab). If both are present we pivot the
@@ -1084,6 +1084,10 @@ def process_csv(input_path: str, output_path: str) -> None:
                 "Triggering PRS": "",
                 "Snapshot Category": mapped_category,
                 "All Blood Marker(s)": all_markers,
+                "RSID_m": "", 
+                "Pathogenicity_m": "", 
+                "Elevation_p": "", 
+                "Threshold_p": ""
             })
 
     with open(output_path, "w", newline="", encoding="utf-8") as f_out:

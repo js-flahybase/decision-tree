@@ -30,6 +30,9 @@ def _t(key):  # added
 # with open("/home/azureuser/decision-tree/blood_conditions_user_context.json") as f:
 #     user_context = json.load(f)
 
+PATHOGENIC_VALUES = {"pathogenic", "likely pathogenic", "likely_pathogenic", "pathogenic/likely pathogenic", "pathogenic/likely_pathogenic"}
+ELEVATED_CATEGORIES = {"elevated", "moderately_elevated", "moderately elevated"}
+
 # genentics part from result jsons 
 def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path):
     """
@@ -41,22 +44,26 @@ def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path
             "apoe_status": "e3/e4",               # raw APOE genotype string, for reference/future use
         }
     """
-    PATHOGENIC_VALUES = {"pathogenic", "likely pathogenic", "likely_pathogenic", "pathogenic/likely pathogenic", "pathogenic/likely_pathogenic"}
-    ELEVATED_CATEGORIES = {"elevated", "moderately_elevated", "moderately elevated"}
-
     # --- 1. monogenic pathogenic/likely pathogenic gene hits ---
     flagged_genes = []
     acmg_genes = []  # subset of flagged_genes
+    monogenic_lookup = {} # (gene, condition_lower) -> (rsid, pathogenicity)
     with open(monogenic_json_path) as f:
         monogenic_data = json.load(f)
     for entry in monogenic_data:
         sig = (entry.get("ClinVar Significance") or "").strip().lower()
         if sig in PATHOGENIC_VALUES:
             gene = (entry.get("Gene Symbol") or "").strip()
+            cond = (entry.get("condition / ACMG Diseases") or "").strip()
             if gene:
                 flagged_genes.append(gene)
                 if entry.get("in_acmg") is True:
                     acmg_genes.append(gene)
+                if cond:
+                    monogenic_lookup[(gene, cond.lower())] = (
+                        entry.get("preferredVarTitle", ""),
+                        entry.get("ClinVar Significance", ""),
+                    )
 
     # --- 2. Polygenic PRS elevated conditions ---
     prs_elevated_conditions = set()
@@ -84,6 +91,7 @@ def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path
         "prs_elevated_conditions": prs_elevated_conditions,
         "prs_categories": prs_categories,
         "apoe_status": apoe_status,
+        "monogenic_lookup": monogenic_lookup,
     }
 
 # match prs json syntax with condition's names used here
@@ -123,7 +131,8 @@ def load_patient_data(monogenic_json, prs_json, apoe_json, blood_csv_path, sex, 
         reader = csv.DictReader(f)
         for row in reader:
             key = row["parameter"].strip().lower()
-            value = row["value"].strip()
+            # value = row["value"].strip()
+            value = row["value"].strip().replace(",", "")  #replace commas in numbers (e.g. 1,234.56) to avoid float conversion errors
 
             if key == "sex":
                 csv_sex = value.strip().lower() or None
@@ -438,6 +447,20 @@ def get_gene_trigger(genetics, condition_name):
     #     parts.append(f"PRS:{prs_key}")
 
     return ", ".join(parts)
+
+def get_monogenic_variant(genetics, condition_name):
+    lookup = genetics.get("monogenic_lookup", {})
+    required_genes = CONDITION_GENES.get(condition_name, [])
+    if required_genes == NO_GENE_GATE or not required_genes:
+        return "", ""
+    key_lc = condition_name.lower()
+    rsids, patho = [], []
+    for gene in required_genes:
+        hit = lookup.get((gene, key_lc))
+        if hit:
+            rsids.append(hit[0])
+            patho.append(hit[1])
+    return ", ".join(rsids), ", ".join(patho)
 
 def is_gene_flagged(genetics, condition_name):
     required_genes = CONDITION_GENES.get(condition_name, [])
@@ -1903,63 +1926,63 @@ results = [
     # --- 14: labs/genetics-driven conditions ---
     evaluate_alzheimers(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_asthma(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_atopic_dermatitis(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_eczema(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_copd(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_hyperthyroidism(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_hypothyroidism(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_ibd(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_nafld(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_osteoarthritis(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_parkinsons(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_psoriasis(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_rheumatoid_arthritis(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_rhinitis(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_t2d(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
 
     # --- 14: second batch ---
@@ -1990,23 +2013,23 @@ results = [
     # ),
     evaluate_fh(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_cardiomyopathy(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False, symptoms=False, imaging_performed=False, imaging_findings=None,
+        family_history=False, symptoms=False, imaging_performed=False, imaging_findings=None,  past_history=False,
     ),
     evaluate_cad(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False, symptoms=False,
+        family_history=False, symptoms=False,  past_history=False,
     ),
     evaluate_hypertriglyceridemia(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     evaluate_hdl_deficiency(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-        family_history=False,
+        family_history=False,  past_history=False,
     ),
     # evaluate_apob(
     #     labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
@@ -2058,6 +2081,17 @@ for r in results:
     entry["Domain"] = CONDITION_DOMAINS.get(entry["Condition"], "")
     entry["Triggering PRS"] = get_triggering_prs(entry["Condition"], data["genetics"])
     entry["Snapshot Category"] = get_snapshot_category(entry["Condition"], entry["Category"], data["genetics"])
+    rsid_m, patho_m = get_monogenic_variant(data["genetics"], entry["Condition"])
+    entry["RSID_m"] = rsid_m
+    entry["Pathogenicity_m"] = patho_m
+
+    elevation = get_prs_category(data["genetics"], entry["Condition"]) or ""
+    entry["Elevation_p"] = elevation
+    entry["Threshold_p"] = (
+        "99 percentile" if elevation == "elevated"
+        else "97 percentile" if elevation in {"moderately elevated", "moderately_elevated"}
+        else ""
+    )
     
     entry["All Blood Marker(s)"] = entry.get("Blood Marker(s)", "")
     if entry.get("Category") not in PATTERN_CATEGORIES_INDICATING_TRIGGER:
@@ -2070,7 +2104,7 @@ active_findings = [
 ]
 
 with open(args.output_csv, "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)"])
+    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p"])
     writer.writeheader()
     writer.writerows(active_findings)
 
