@@ -34,7 +34,7 @@ def load_csv(path):
 def _is_empty(val):
     return val is None or val.strip() == "" or val.strip().lower() == "none"
 
-GENETIC_COLS = ["RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p"]
+GENETIC_COLS = ["RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status"]
 
 def merge_rows(condition, gene_row, blood_row):
     """Returns the row to keep. Raises ValueError for impossible combinations."""
@@ -44,7 +44,7 @@ def merge_rows(condition, gene_row, blood_row):
             raise ValueError(f"{condition}: unrecognized category '{cat}' in {src} CSV")
 
     if g == TYP:
-        for col in GENETIC_COLS: #to keep the genetic info about typical (just for reference and uniformity)
+        for col in GENETIC_COLS:
             blood_row[col] = gene_row.get(col,"")
         return blood_row #"Typical" in gene csv is always replaced (it was gene gate filtered out, so no info)
     if g == SIG:

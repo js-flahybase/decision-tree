@@ -60,10 +60,10 @@ def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path
                 if entry.get("in_acmg") is True:
                     acmg_genes.append(gene)
                 if cond:
-                    monogenic_lookup[(gene, cond.lower())] = (
+                    monogenic_lookup.setdefault((gene, cond.lower()), []).append((
                         entry.get("preferredVarTitle", ""),
                         entry.get("ClinVar Significance", ""),
-                    )
+                    ))
 
     # --- 2. Polygenic PRS elevated conditions ---
     prs_elevated_conditions = set()
@@ -456,11 +456,18 @@ def get_monogenic_variant(genetics, condition_name):
     key_lc = condition_name.lower()
     rsids, patho = [], []
     for gene in required_genes:
-        hit = lookup.get((gene, key_lc))
-        if hit:
+        for hit in lookup.get((gene, key_lc), []):
             rsids.append(hit[0])
             patho.append(hit[1])
     return ", ".join(rsids), ", ".join(patho)
+
+def get_apoe_status(genetics, condition_name):
+    required_genes = CONDITION_GENES.get(condition_name, [])
+    if required_genes == NO_GENE_GATE or "APOE" not in required_genes:
+        return ""
+    if "APOE" not in genetics.get("flagged_genes", []):
+        return ""
+    return genetics.get("apoe_status", "")
 
 def is_gene_flagged(genetics, condition_name):
     required_genes = CONDITION_GENES.get(condition_name, [])
@@ -2084,6 +2091,7 @@ for r in results:
     rsid_m, patho_m = get_monogenic_variant(data["genetics"], entry["Condition"])
     entry["RSID_m"] = rsid_m
     entry["Pathogenicity_m"] = patho_m
+    entry["APOE_Status"] = get_apoe_status(data["genetics"], entry["Condition"])
 
     elevation = get_prs_category(data["genetics"], entry["Condition"]) or ""
     entry["Elevation_p"] = elevation
@@ -2104,7 +2112,7 @@ active_findings = [
 ]
 
 with open(args.output_csv, "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p"])
+    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status"])
     writer.writeheader()
     writer.writerows(active_findings)
 
