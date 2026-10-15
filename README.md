@@ -78,6 +78,7 @@ Each result includes these columns:
 - **Pathogenicity_m** — Pathogenicity information (`Pathogenic` and `Likely pathogenic`) from monogenic assessment json
 - **Elevation_p** — Elevation information (`Elevated` and `Moderately elevated`) from PRS assessment json
 - **Threshold_p** — Threshold in percentile for elevation from PRS assessment json 
+- **APOE_Status** — APOE status (`e3`, `e4`) if APOE gene was found among flagged genes
 
 This makes it possible to see *why* a category was reached, not just the final result.
 
