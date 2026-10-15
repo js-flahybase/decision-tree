@@ -74,6 +74,10 @@ Each result includes these columns:
 - **Triggering PRS** — Shown when the condition's PRS category is `elevated` or `moderately_elevated` and contributed to passing the gate
 - **Snapshot Category** — A plain-language recommendation: `To discuss with General Practitioner`, `Worth acting on for prevention`, or `Typical - nothing to act on`
 - **All Blood Marker(s)** — All relevant lab values with crossed a threshold, regardless of if they supported a `Category` assignment. This column is for GP's informative context.
+- **RSID_m** — rsID(s) specific to the `Gene` and `Condition` found in monogenic assessment json
+- **Pathogenicity_m** — Pathogenicity information (`Pathogenic` and `Likely pathogenic`) from monogenic assessment json
+- **Elevation_p** — Elevation information (`Elevated` and `Moderately elevated`) from PRS assessment json
+- **Threshold_p** — Threshold in percentile for elevation from PRS assessment json 
 
 This makes it possible to see *why* a category was reached, not just the final result.
 
