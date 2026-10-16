@@ -2096,8 +2096,8 @@ for r in results:
     elevation = get_prs_category(data["genetics"], entry["Condition"]) or ""
     entry["Elevation_p"] = elevation
     entry["Threshold_p"] = (
-        "99 percentile" if elevation == "elevated"
-        else "97 percentile" if elevation in {"moderately elevated", "moderately_elevated"}
+        ">99 percentile" if elevation == "elevated"
+        else ">97 percentile" if elevation in {"moderately elevated", "moderately_elevated"}
         else ""
     )
     
