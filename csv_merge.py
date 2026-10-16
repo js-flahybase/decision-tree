@@ -59,7 +59,7 @@ def merge_rows(condition, gene_row, blood_row):
     if b == ELEV:
         for col in BLOOD_MARKER_COLS:
             if _is_empty(gene_row.get(col)):
-                gene_row[col] = blood_row.get(col, "") #if both Elevated susceptibility and cols are empty, replace "Blood Marker(s)" and "All Blood Marker(s)" columns with blood csv's cols
+                gene_row[col] = blood_row.get(col, "") #if both Elevated susceptibility and col(s) are empty, "Blood Marker(s)" and "All Blood Marker(s)" (independently checked for empty or not), replaced with cols) from blood csv's cols
     elif b == TYP and not _is_empty(blood_row.get("All Blood Marker(s)")):
         if _is_empty(gene_row.get("All Blood Marker(s)")):
             gene_row["All Blood Marker(s)"] = blood_row["All Blood Marker(s)"] #only add "All Blood Markers" from blood's Typical if it is non empty and gene's entry is empty
