@@ -87,6 +87,7 @@
 
     "crp_borderline_low": 5,
     "crp_borderline_high": 10,
-    "esr_borderline": 20
+    "esr_borderline": 20,
+    "PSA_Borderline" : 4
   }
 }

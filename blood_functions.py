@@ -73,7 +73,8 @@ CONDITION_DOMAINS = {
     "Inflammatory Bowel Disease": "Digestive Health",
     "Hereditary Hemochromatosis": "Digestive Health",
     "Eczema": "Skin Health",
-    "Atopic Dermatitis": "Skin Health"
+    "Atopic Dermatitis": "Skin Health",
+    "Prostate Cancer": "Cancer"
 }
 
 
@@ -917,6 +918,35 @@ def evaluate_atopic_dermatitis(labs, patient, symptoms, family_history, past_his
         "TriggeredValues": ", ".join(triggered),
         "PartialTriggered": ", ".join(partial_triggered)
     }]
+    
+def evaluate_prostate_risk(labs,patient, symptoms, family_history, past_history):
+    # Only evaluated for men aged 50+
+    age = get_age(patient)
+    if not (is_male(patient) and age is not None and age >= 50):
+        return []
+    
+    psa = labs.get("total_psa")
+      # 3. Check if values are abnormal
+    psa_threshold = THRESHOLDS2["PSA_Borderline"]
+    psa_flag = is_elevated(psa, psa_threshold)
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if psa_flag:
+        category = "Elevated susceptibility"
+        _track(triggered, "total_psa", psa, psa_threshold, ">=", psa_flag)
+    else:
+        category = "Typical"
+
+    return [{
+        "Condition": "Prostate Cancer",
+        "Category": category,
+        "Values": _fmt_values(total_psa=psa),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+        
 
 
 
@@ -937,6 +967,7 @@ EVALUATORS = [
     evaluate_hereditary_hemochromatosis,
     evaluate_eczema,
     evaluate_atopic_dermatitis,
+    evaluate_prostate_risk
 ]
 
 
