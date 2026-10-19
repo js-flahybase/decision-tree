@@ -395,6 +395,10 @@ CONDITION_GENES = {
     # "Elevated Apolipoprotein B": ["APOB"],
     "Li-Fraumeni Syndrome": ["TP53"],
     "PTEN Hamartoma Tumor Syndrome": ["PTEN"],
+    "Prostate Cancer": [
+        "HOXB13", "ELAC2", "CDH1", "CHEK2", "BRCA2", "PALB2", "ATM", "PTEN",
+        "TP53", "MSH6", "XPC", "AR", "BRCA1"
+    ],
 }
 
 # only conditions filtered through this will have their functions run on patient data block
@@ -1886,6 +1890,20 @@ def evaluate_hemochromatosis(labs, patient, genetics, family_history, past_histo
         "Blood Marker(s)": ", ".join(triggered),
     }]
 
+# Prostate Cancer
+def evaluate_prostate(labs, patient, genetics, family_history, past_history, symptoms=False):
+    sex = patient.get("sex")
+    if sex != "male":
+        return []
+
+    if not has_flagged_gene(genetics, "Prostate Cancer"):
+        return [{"Condition": "Prostate Cancer", "Category": GENE_NOT_FOUND}]
+
+    return [{
+        "Condition": "Prostate Cancer", "Category": "Elevated susceptibility", #hard-coded, update when evaluating E.P. and S.P.
+        "DNA Marker(s)": get_gene_trigger(genetics, "Prostate Cancer"),
+        "Blood Marker(s)": "", #PSA not evaluated, so hard-coded empty for now, update when evaluating based on reference update from lab
+    }]
 
 # ttg-iga not covered in blood panel
 
@@ -2050,6 +2068,10 @@ results = [
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
         family_history=False, conditions=None,
     ),
+    evaluate_prostate(
+        labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
+        family_history=False, symptoms=False,  past_history=False,
+    ),
 ]
 
 CONDITION_DOMAINS = {
@@ -2081,10 +2103,12 @@ CONDITION_DOMAINS = {
     "HDL Deficiency": "Cardiac Health",
     "Li-Fraumeni Syndrome": "Cancer",
     "PTEN Hamartoma Tumor Syndrome": "Cancer",
+    "Prostate Cancer": "Cancer"
 }
 
-for r in results:
-    entry = r[0]
+active_findings = [r[0] for r in results if r]
+
+for entry in active_findings:
     entry["Domain"] = CONDITION_DOMAINS.get(entry["Condition"], "")
     entry["Triggering PRS"] = get_triggering_prs(entry["Condition"], data["genetics"])
     entry["Snapshot Category"] = get_snapshot_category(entry["Condition"], entry["Category"], data["genetics"])
@@ -2105,11 +2129,6 @@ for r in results:
     if entry.get("Category") not in PATTERN_CATEGORIES_INDICATING_TRIGGER:
         entry["Blood Marker(s)"] = ""
 
-
-active_findings = [
-    r[0]
-    for r in results
-]
 
 with open(args.output_csv, "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status"])
