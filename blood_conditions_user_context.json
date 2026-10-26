@@ -1,4 +1,31 @@
 {
+  "Prostate Cancer": {
+    "family_history": [
+      "Prostate Cancer",
+      "Breast Cancer",
+      "Lynch syndrome",
+      "Ovarian Cancer",
+      "Pancreatic Cancer",
+      "Colon Cancer"
+    ],
+    "symptoms": [
+      "Difficulty starting or stopping urination",
+      "Weak or interrupted urine flow",
+      "Frequent urination, especially at night",
+      "Blood in urine or semen",
+      "Erectile dysfunction",
+      "Pelvic, hip, back, or bone pain",
+      "Unexplained weight loss"
+    ],
+    "past_history": [
+      "Benign prostatic hyperplasia",
+      "Prostatitis",
+      "High-grade prostatic intraepithelial neoplasia",
+      "Prior pelvic radiation",
+      "Obesity",
+      "Smoking"
+    ]
+  },
   "Alzheimer's Disease": {
     "family_history": [
       "Alzheimer's disease",
