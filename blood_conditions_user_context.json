@@ -190,7 +190,7 @@
       "Turner syndrome"
     ]
   },
-  "IBD": {
+  "Inflammatory Bowel Disease": {
     "family_history": [
       "Inflammatory bowel disease"
     ],
@@ -350,7 +350,7 @@
       "Cardiovascular disease (heart attack, stroke, peripheral artery disease)"
     ]
   },
-  "MODY": {
+  "Maturity-Onset Diabetes of the Young": {
     "family_history": [
         "Maturity-onset diabetes of the young",
         "Diabetes mellitus",
@@ -404,7 +404,7 @@
         "Hemolytic anemia"
     ]
   },
-  "Hemochromatosis": {
+  "Hereditary Hemochromatosis": {
     "symptoms": [
         "Fatigue",
         "Joint discomfort",
