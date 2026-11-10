@@ -603,5 +603,29 @@
       "Vascular anomaly",
       "Gastrointestinal polyps"
     ]
+  },
+  "Celiac Disease": {
+    "family_history": [
+        "Celiac disease",
+        "Dermatitis herpetiformis",
+        "Autoimmune thyroid disease",
+        "Abdominal distension"
+    ],
+    "symptoms": [
+        "Fatigue",
+        "Abdominal discomfort",
+        "Bloating",
+        "Diarrhea",
+        "Constipation",
+        "Weight loss",
+        "Early menopause",
+        "Abnormal periods"
+    ],
+    "past_history": [
+      "Anemia",
+      "Osteoporosis",
+      "Autoimmune thyroid disease",
+      "Dermatitis herpetiformis"
+    ]
   }
 }

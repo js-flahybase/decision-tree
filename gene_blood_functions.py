@@ -295,7 +295,7 @@ HEMOGLOBIN_UPPER_HEMOCHROMATOSIS = _t("HEMOGLOBIN_UPPER_HEMOCHROMATOSIS")  # g/d
 # MCV_LOWER_CELIAC = 82                          # fL
 # MCH_LOWER_CELIAC = 27                          # pg
 # MCHC_LOWER_CELIAC = 31.5                       # g/dL
-# TTG_RANGE = (20,30)                            # U/mL (Celiac)
+TTG_RANGE = _t("TTG_RANGE")                      # AU/mL (Celiac)
 
 # =============================================================================
 # Shared helper functions
@@ -379,7 +379,7 @@ CONDITION_GENES = {
     "Muscular Dystrophy": ["DMD", "FKRP", "LMNA", "SGCA", "SGCB"],
     "Gilbert Syndrome": ["UGT1A1"],
     "Hereditary Hemochromatosis": ["HFE"],
-    # "Celiac Disease": ["HLA-DQ2", "HLA-DQ8"],
+    "Celiac Disease": ["HLA-DQ2", "HLA-DQ8"],
     "Familial Hypercholesterolemia": ["LDLR", "APOB", "PCSK9"],
     "Cardiomyopathy": [
         "ACTC1", "BAG3", "DES", "FLNC", "LMNA", "MYBPC3", "MYH7", "MYL2",
@@ -1905,42 +1905,37 @@ def evaluate_prostate(labs, patient, genetics, family_history, past_history, sym
         "Blood Marker(s)": "", #PSA not evaluated, so hard-coded empty for now, update when evaluating based on reference update from lab
     }]
 
-# ttg-iga not covered in blood panel
+# ttg-iga added back to blood panel
 
-# # Celiac Disease
-# def evaluate_celiac_disease(labs, patient, genetics, family_history, past_history, symptoms=False):
-#     if not has_flagged_gene(genetics, "Celiac Disease"):
-#         return [{"Condition": "Celiac Disease", "Category": GENE_NOT_FOUND}]
+# Celiac Disease
+def evaluate_celiac_disease(labs, patient, genetics, family_history, past_history, symptoms=False):
+    if not has_flagged_gene(genetics, "Celiac Disease"):
+        return [{"Condition": "Celiac Disease", "Category": GENE_NOT_FOUND}]
 
-#     ttg = labs.get("ttg-iga") #or labs.get("Tissue Transglutaminase (tTG) Antibody, IgA")
+    ttg = labs.get("ttg")
 
-#     TTG_Early = is_elevated(ttg, TTG_RANGE[0]) #and not is_above(ttg, TTG_RANGE[1])
-#     TTG_Likely = is_above(ttg, TTG_RANGE[1])
+    TTG_Early = is_elevated(ttg, TTG_RANGE[0])
+    TTG_Likely = is_above(ttg, TTG_RANGE[1])
 
-#     triggered = []
-#     if TTG_Likely:
-#             note(triggered, "tTG-IgA", ttg, True, f">{TTG_RANGE[1]}")
-#     elif TTG_Early:
-#         note(triggered, "tTG-IgA", ttg, True, f">={TTG_RANGE[0]}")
+    triggered = []
+    if TTG_Likely:
+            note(triggered, "ttg", ttg, True, f">{TTG_RANGE[1]}")
+    elif TTG_Early:
+        note(triggered, "ttg", ttg, True, f">={TTG_RANGE[0]}")
     
 
-#     if (
-#         TTG_Likely or
-#         (TTG_Early and (family_history or symptoms or past_history))
-#     ):
-#         category = "Significant Pattern"
-#     elif (
-#         TTG_Early
-#     ):
-#         category = "Early Pattern"
-#     else:
-#         category = "Elevated susceptibility"
+    if TTG_Likely or (TTG_Early and (family_history or symptoms or past_history)):
+        category = "Significant Pattern"
+    elif TTG_Early:
+        category = "Early Pattern"
+    else:
+        category = "Elevated susceptibility"
 
-#     return [{
-#         "Condition": "Celiac Disease", "Category": category,
-#         "DNA Marker(s)": get_gene_trigger(genetics, "Celiac Disease"),
-#         "Blood Marker(s)": ", ".join(triggered),
-#     }]
+    return [{
+        "Condition": "Celiac Disease", "Category": category,
+        "DNA Marker(s)": get_gene_trigger(genetics, "Celiac Disease"),
+        "Blood Marker(s)": ", ".join(triggered),
+    }]
 
 
 # calling:
@@ -2032,10 +2027,10 @@ results = [
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
         family_history=False, past_history=False, symptoms=False,
     ),
-    # evaluate_celiac_disease(
-    #     labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
-    #     family_history=False, past_history=False, symptoms=False,
-    # ),
+    evaluate_celiac_disease(
+        labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
+        family_history=False, past_history=False, symptoms=False,
+    ),
     evaluate_fh(
         labs=data["labs"], patient=data["patient"], genetics=data["genetics"],
         family_history=False,  past_history=False,
@@ -2095,7 +2090,7 @@ CONDITION_DOMAINS = {
     "Muscular Dystrophy": "Muscle Health",
     "Gilbert Syndrome": "Kidney & Metabolic Health",
     "Hereditary Hemochromatosis": "Digestive Health",
-    # "Celiac Disease": "Immune Health",
+    "Celiac Disease": "Immune Health",
     "Familial Hypercholesterolemia": "Cardiac Health",
     "Cardiomyopathy": "Cardiac Health",
     "Coronary Artery Disease": "Cardiac Health",
