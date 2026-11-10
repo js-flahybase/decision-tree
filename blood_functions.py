@@ -74,7 +74,8 @@ CONDITION_DOMAINS = {
     "Hereditary Hemochromatosis": "Digestive Health",
     "Eczema": "Skin Health",
     "Atopic Dermatitis": "Skin Health",
-    "Prostate Cancer": "Cancer"
+    "Prostate Cancer": "Cancer",
+    "Celiac Disease": "Immune Health"
 }
 
 
@@ -946,7 +947,39 @@ def evaluate_prostate_risk(labs,patient, symptoms, family_history, past_history)
         "TriggeredValues": ", ".join(triggered),
         "PartialTriggered": ", ".join(partial_triggered)
     }]
-        
+def evaluate_Celiac_disease(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    ttg = labs.get("ttg")
+ 
+    # 3. Check if values are abnormal
+    ttg_flag = is_above(ttg, THRESHOLDS["ttg_high"])
+
+
+    ttg_borderline_flag = is_elevated(ttg, THRESHOLDS2["ttg_borderline_high"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if ttg_flag or (ttg_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "ttg", ttg, THRESHOLDS["ttg_high"], ">", ttg_flag)
+    elif ttg_borderline_flag or (ttg_borderline_flag and (symptoms or family_history or past_history)):
+        category = "Early Pattern"
+        _track(triggered, "ttg", ttg, THRESHOLDS["ttg_borderline_high"], ">=", ttg_borderline_flag)
+    else:
+        category = "Typical"
+        if ttg_flag:
+            _track(triggered, "ttg", ttg, THRESHOLDS["ttg_high"], ">", ttg_flag)
+        elif ttg_borderline_flag:
+           _track(triggered, "ttg", ttg, THRESHOLDS["ttg_borderline_high"], ">=", ttg_borderline_flag)
+
+    return [{
+        "Condition": "Celiac Disease",
+        "Category": category,
+        "Values": _fmt_values(ttg=ttg),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]        
 
 
 
@@ -967,7 +1000,8 @@ EVALUATORS = [
     evaluate_hereditary_hemochromatosis,
     evaluate_eczema,
     evaluate_atopic_dermatitis,
-    evaluate_prostate_risk
+    evaluate_prostate_risk,
+    evaluate_Celiac_disease
 ]
 
 

@@ -56,7 +56,8 @@
     "eosinophils_high_eczema": 1.5,
     "ige_high_eczema": 2000,
     "crp_high_skin": 3,
-    "esr_high_eczema": 40
+    "esr_high_eczema": 40,
+    "ttg_high": 30
   },
   "THRESHOLDS2": {
     "fasting_plasma_glucose_borderline_low": 110,
@@ -88,6 +89,7 @@
     "crp_borderline_low": 5,
     "crp_borderline_high": 10,
     "esr_borderline": 20,
-    "PSA_Borderline" : 4
+    "PSA_Borderline" : 4,
+    "ttg_borderline_high": 20
   }
 }
