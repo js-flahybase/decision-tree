@@ -1,0 +1,80 @@
+Domain,parameter,reported_name,Known as ,threshold_unit,reported_unit,CALCULATION 
+,sex,,,,,
+,age,,,,,
+"Brain Health, Immune Health",total_cholesterol,"Cholesterol Total, Serum","Cholesterol Total, Blood Cholesterol, Total Cholesterol, CHOL",mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml, g/L",mmol/L × 38.67; g/L × 100; µmol/L× 0.03867; mg/100 mL × 1; mg% × 1 ; mg/L / 10; µg/mL / 10
+"Brain Health, Immune Health, Cardiac Health",ldl_c,LDL Cholesterol,"LDL - Cholesterol, LDL-C",mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml, g/L",mmol/L × 38.67; g/L × 100; µmol/L× 0.03867; mg/100 mL × 1; mg% × 1 ; mg/L / 10; µg/mL / 10
+"Brain Health, Immune Health, Digestive Health, Cardiac Health",triglycerides,"Triglycerides, Serum","TG, triacylglycerol, TAG, Triacylglyceride, TRIG",mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml, g/L",mmol/L × 88.57; g/L × 100; µmol/L× 0.08857; mg/100mL × 1; mg% × 1 ; mg/L / 10; µg/mL / 10
+"Brain Health, Immune Health, Digestive Health, Cardiac Health",hdl_c,HDL Cholesterol Direct,"HDL - Cholesterol, HDL-C",mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml",mmol/L × 38.67; g/L × 100; µmol/L× 0.03867; mg/100 mL × 1; mg% × 1 ; mg/L / 10; µg/mL / 10
+"Cardiac Health, Brain Health, Respiratory Health, Digestive Health, Skin Health, Immune Health",crp,HsCRP (High Sensitivity CRP),"Serum High Sensitivity C-Reactive Protein (hsCRP),hsCRP",mg/L,"nmol/L, mg/L, mg/dL, mg/100mL, mg%, µg/mL, g/L",mg/dL × 10; nmol/L ×  0.105; µg/mL × 1; g/L× 1000; mg%× 10; mg/dL× 10; mg/100mL× 10; mg/L× 1
+"Respiratory Health, Skin Health, Cardiac Health",eosinophils,Absolute Eosinophils CountBlood,"Absolute Eosinophils Count Blood, Absolute Eosinophils Count",10^9/L,"G/L, Gpt/L, cells/L, 10^3/µL, 1000/µL, 10^3/mm^3, 1000/mm^3, K/µL, K/mm^3, cells/µL,cells/cu.mm",cells/cu.mm / 1000; G/L × 1; Gpt/L × 1; cells/L / 10^9; 10^3/µL × 1;1000/µL × 1; 10^3/mm³ × 1; 1000/mm³ × 1; K/µL × 1; K/mm³ × 1; cells/µL / 1000
+Respiratory Health,neutrophils,Absolute Neutrophils CountBlood,"Absolute neutrophil count (ANC), neutrophil granulocytes, polymorphonuclear cells, PMN's, polys, granulocytes, segmented neutrophils or segs",10^9/L,"G/L, Gpt/L, cells/L, 10^3/µL, 1000/µL, 10^3/mm^3, 1000/mm^3, K/µL, K/mm^3, cells/µL,cells/cu.mm",cells/cu.mm / 1000; G/L × 1; Gpt/L × 1; cells/L / 10^9; 10^3/µL × 1;1000/µL × 1; 10^3/mm³ × 1; 1000/mm³ × 1; K/µL × 1; K/mm³ × 1; cells/µL / 1000
+Respiratory Health,fibrinogen,Fibrinogen,"Factor I, Fibrinogen Activity, Functional Fibrinogen, Fibrinogen Antigen, Plasma Fibrinogen, Hypofibrinogenemia Test",mg/dL,"g/L, mg/dL, mg/100mL, mg%, mg/L, µg/mL","g/L× 100, mg/100mL× 1, mg%× 1, mg/L/10, µg/mL/10"
+Endocrine Health,tsh,"TSH (Thyroid Stimulating Hormone) - Ultrasensitive, Serum",TSH; Thyrotropin,µIU/mL, mIU/L, mIU/L x 1
+Endocrine Health,free_t3,FT3 (Free Triiodothyronine),"Free T3, free triiodothyronine",pg/mL,"pmol/L, pg/dL, pg/100mL, pg%, ng/dL, ng/L","pmol/L× 0.651, pg/dL/100, pg/100mL/100, pg%/100, ng/dL×10, ng/L×1"
+Endocrine Health,free_t4,FT4 (Free Thyroxine),"Free thyroxine, Free T4",ng/dL,"pmol/L, ng/100mL, ng%, ng/L, pg/mL, ng/mL","pmol/L× 0.0777, ng/100mL× 1, ng% × 1, ng/L/10, pg/Ml/10, ng/mL× 100"
+Endocrine Health,tpoab,"Microsomal (TPO) Antibody Titre, Serum","Anti-thyroid Peroxidase Autoantibodies, Antimicrosomal Antibodies, Antithyroid Microsomal Antibodies, Thyroid Peroxidase Autoantibodies, TPO Antibodies, Thyroid Peroxidase Test, Thyroid microsomal antibody, Thyroperoxidase antibody, TPOAb, Anti-TPO",IU/mL,kIU/L,kIU/L x1
+"Digestive Health, Cardiac Health",hemoglobin,Haemoglobin (Hb),"Haemoglobin, Hg, Hemoglobin tetramer, Hemoglobin",gm/dL,"g/L, g/100mL, g%, mg/mL","g/L/10, g/100mL × 1, g% × 1, mg/mL/10"
+Digestive Health,albumin,"Albumin, Serum",ALB,gm/dL,"mmol/L, µmol/L, mcmol/L, umol/L ,µM/L, mcM/L, uM/L, micromol/L, g/L, g/100mL, g%, mg/mL","mmol/L/0.1505, µmol/L/150.4664, mcmol/L/150.4664, umol/L/150.4664 ,µM/L/150.4664, mcM/L/150.4664, uM/L/150.4664, micromol/L/150.4664, g/L/10, g/100mL× 1, g%× 1, mg/mL/10"
+"Kidney & Metabolic Health, Digestive Health",ast,SGOT (AST),"Aspartate transaminase (AST), aspartate aminotransferase, AspAT/ASAT/AAT, glutamic oxaloacetic transaminase (GOT), Serum Glutamic-Oxaloacetic Transaminase (SGOT)",U/L,"nkat/l, µkat/l, nmol/(s•L), µmol/(s•L), IU/L, µmol/(min•L), µmol/(h•L), µmol/(h•mL)","nkat/l/16.6667, µkat/l/0.0167, nmol/(s•L)/16.6667, µmol/(s•L)/0.0167, IU/L× 1, µmol/(min•L)× 1, µmol/(h•L)/60, µmol/(h•mL)/0.06"
+Kidney & Metabolic Health,alt,SGPT (ALT),"Alanine aminotransferase (ALAT), Alanine Transaminase (ALT), Glutamate-pyruvate transaminase (SGPT), Glutamic-pyruvic transaminase (SGPT)",U/L,"nkat/l, µkat/l, nmol/(s•L), µmol/(s•L), IU/L, µmol/(min•L), µmol/(h•L), µmol/(h•mL)","nkat/l/16.6667, µkat/l/0.0167, nmol/(s•L)/16.6667, µmol/(s•L)/0.0167, IU/L× 1, µmol/(min•L)× 1, µmol/(h•L)/60, µmol/(h•mL)/0.06"
+"Kidney & Metabolic Health, Digestive Health",ggt,Gamma GT (GGTP),"Gamma-glutamyl transferase, Gamma-glutamyl transpeptidase, γ-glutamyl transferase, γ-glutamyl transpeptidase, GGT, GGTP, gamma-GT",U/L,"nkat/l, µkat/l, nmol/(s•L), µmol/(s•L), IU/L, µmol/(min•L), µmol/(h•L), µmol/(h•mL)","nkat/l/16.6667, µkat/l/0.0167, nmol/(s•L)/16.6667, µmol/(s•L)/0.0167, IU/L× 1, µmol/(min•L)× 1, µmol/(h•L)/60, µmol/(h•mL)/0.06"
+Digestive Health,fib4,Fibrosis-4 (FIB-4),,,,Age×AST/Platelets×(ALT)^1/2
+Digestive Health,platelets,Platelet count,"Thrombocytes, Platelet Count, Thrombocyte Count; PLT",x10^3/µl,"10^9/L, G/L, Gpt/L, cells/L, 10^3/mm^3, 1000/mm^3, K/µL, K/mm^3, cells/µL, cells/mm^3,","10^9/L× 1, G/L× 1, Gpt/L× 1, cells/L/10^9, 10^3/mm^3× 1, 1000/mm^3× 1, K/µL× 1, K/mm^3× 1, cells/µL/1000, cells/mm^3/1000"
+Digestive Health,ast/alt,SGOT (AST)/SGPT (ALT),,,,SGOT (AST)/SGPT (ALT)
+"Skin Health, Immune Health, Digestive Health",esr,ESR (Erythrocyte Sedimentation Rate),,mm/hr,mm/h,mm/h × 1
+"Skin Health, Digestive Health",nlr,Neutrophil/Lymphocyte Ratio,,,,Absolute Neutrophils CountBlood/Absolute Lymphocyte CountBlood
+"Skin Health, Respiratory Health",ige,IgE Total antibody,,IU/mL,kIU/L,kIU/L x1
+Endocrine Health,fasting_glucose,Glucose Fasting,"Anhydrous dextrose, Corn sugar, D(+)-Glucose, Dextropur, Dextrose, D-Glucose, Goldsugar, Grape sugar, Blood sugar, fasting blood sugar, FBS, fasting blood glucose, FBG, fasting plasma glucose, blood glucose, urine glucose.",mg/dL,"mmol/L, µmol/L, mg/100mL, mg%, mg/L, µg/mL","mmol/L × 18 , µmol/L /55.5062, mg/100mL x1, mg% x1, mg/L /10, µg/mL /10"
+Endocrine Health,fasting_insulin,Insulin - Fasting,,µIU/mL,"pmol/L, mIU/L","pmol/L / 6.9444, mIU/L x1"
+"Endocrine Health, Cardiac Health, Digestive Health",hba1c,HbA1c (Glycated Haemoglobin),"A1C Hemoglobin A1C, Glycated hemoglobin, Glycosylated hemoglobin HbA1c",%,mmol/mol,(0.09148 × mmol/mol) + 2.152
+Kidney & Metabolic Health,calcium,"Calcium, Serum","Total Calcium, Ca, Ionized Calcium, Ca++, Ca2+",mg/dL,"mmol/L, µmol/L, mg/100mL, mg%, mg/L, µg/mL, mEq/L","mmol/L /0.2495, µmol/L /249.5134, mg/100mL x1, mg% x1, mg/L /10, µg/mL /10, mEq/L /0.4990"
+Muscle Health,ck,CPK Total,"CK, Total CK, Creatine Phosphokinase, CPK, phospho-creatine kinase",U/L,"nkat/l, µkat/l, nmol/(s•L), µmol/(s•L), IU/L, µmol/(min•L), µmol/(h•L), µmol/(h•mL)","nkat/l/16.6667, µkat/l/0.0167, nmol/(s•L)/16.6667, µmol/(s•L)/0.0167, IU/L× 1, µmol/(min•L)× 1, µmol/(h•L)/60, µmol/(h•mL)/0.06"
+Cardiac Health,non_hdl_c,Non HDL Cholesterol,,mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml, g/L",mmol/L × 38.67; g/L × 100; µmol/L× 0.03867; mg/100 mL × 1; mg% × 1 ; mg/L / 10; µg/mL / 10
+Cardiac Health,vldl,VLDL Cholesterol,,mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml, g/L",mmol/L × 38.67; g/L × 100; µmol/L× 0.03867; mg/100 mL × 1; mg% × 1 ; mg/L / 10; µg/mL / 10
+Cardiac Health,apob,Apolipoproteins B,ApoB,mg/dL,"mmol/L, µmol/L, g/L, mg/100mL, mg%, mg/mL","mmol/L/0.0000195, µmol/L/0.0195, g/L× 100, mg/100mL× 1, mg%× 1, mg/mL× 100"
+Cardiac Health,lpa,Lipoprotein(a),"Lipoprotein little a, Lipoprotein (a), Lp (a)",mg/dL,"g/L, mg/L, mg/100mL, mg%, mg/ml","g/L x100, mg/L /10, mg/100mL x1, mg% x1, mg/ml x100"
+Kidney & Metabolic Health,total_bilirubin,Bilirubin Total,"Total Bilirubin; TBIL; Neonatal Bilirubin, Haematoidin",mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml","mmol/l / 0.0171, µmol/l / 17.1037, mg/100ml x 1, mg% x1, mg/l /10, µg/ml /10"
+Kidney & Metabolic Health,direct_bilirubin,Bilirubin Direct,"Direct Bilirubin, DBIL; Neonatal Bilirubin, Conjugated Bilirubin, Haematoidin",mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml","mmol/l / 0.0171, µmol/l / 17.1037, mg/100ml x 1, mg% x1, mg/l /10, µg/ml /10"
+Kidney & Metabolic Health,indirect_bilirubin,Bilirubin- Indirect,Indirect Bilirubin,mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml","mmol/l / 0.0171, µmol/l / 17.1037, mg/100ml x 1, mg% x1, mg/l /10, µg/ml /10"
+Kidney & Metabolic Health,alp,"Alkaline Phosphatase, Serum","ALP, ALKP, ALPase, Alk Phos",U/L,"nkat/l, µkat/l, nmol/(s•L), µmol/(s•L), IU/L, µmol/(min•L), µmol/(h•L), µmol/(h•mL)","nkat/l/16.6667, µkat/l/0.0167, nmol/(s•L)/16.6667, µmol/(s•L)/0.0167, IU/L× 1, µmol/(min•L)× 1, µmol/(h•L)/60, µmol/(h•mL)/0.06"
+Digestive Health,ferritin,Ferritin,"FERR, Serum Ferritin",ng/mL,"nmol/L, pmol/L, µg/L, µg/dL, µg/100mL, µg%","nmol/L / 0.0022, pmol/L / 2.2472, µg/L x 1, µg/dL x 10, µg/100mL x 10, µg% x 10"
+Digestive Health,transferrin_saturation,Transferin Saturation,,%,%,%× 1
+Cardiac Health,mch,MCH (Mean Corpuscular Hb),Mean cell hemoglobin,pg,"fmol, fmol/cell, pg/cell","fmol/0.0621, fmol/cell/0.0621, pg/cell× 1"
+Cancer,total_psa,Total PSA (Prostate Specific Antigen),Prostate - specific antigen total (tPSA),ng/mL,"ng/dl, ng/100ml, ng%, ng/l, µg/l","ng/dl /100, ng/100ml /100, ng% /100, ng/l /1000, µg/l x1"
+Cardiac Health,TIBC,TIBC,"Iron indices, iron profile, TIBC, total iron binding capacity, iron binding capacity, IBC, serum iron-binding capacity, transferrin iron-binding capacity, Iron Binding Capacity, Total (TIBC)",µg/dL,"mmol/l, µmol/l, µg/100ml, µg%, µg/l, ng/ml, mg/L","mmol/l / 0.0002, µmol/l / 0.1791, µg/100ml x1, µg% x1, µg/l /10, ng/ml /10, mg/L x100"
+,eag,Estimated Average Glucose (eAG),,mg/dL,mmol/L,mmol/L × 18
+Cardiac Health,"Iron, Serum","Iron, Serum","Fe, Fe Tests, Iron Indices, Iron serum",µg/dL,"mmol/l, µmol/l, µg/100ml, µg%, µg/l, ng/ml","mmol/l /0.1791, µmol/l / 0.179, µg/100ml x1, µg% x1, µg/l /10, ng/ml /10, mg/L x100"
+Endocrine Health,Vitamin D Total - 25 Hydroxy (OH),Vitamin D Total - 25 Hydroxy (OH),"25-Hydroxycalciferol, 25-OH-D, Cholecalciferol Metabolite, calcidiol (25-hydroxy-vitamin D), calcifidiol (25-hydroxy-vitamin D), 25(OH)D",ng/mL,"nmol/L, ng/dL, ng/100mL, ng%, ng/L, µg/L","nmol/L ÷ 2.5 ng/dL /100, ng/100mL /100, ng% /100, ng/L /1000, µg/L x 1"
+Brain Health,Vitamin B12 (Cyanocobalamin),Vitamin B12 (Cyanocobalamin),"Cobalamin, cyanocobalamin",pg/mL,"pmol/L, pg/dL, pg/100mL, pg%, pg/L, ng/L","pmol/L ÷ 0.738, pg/dL ÷ 100, pg/100mL ÷ 100, pg% ÷ 100, pg/L ÷ 1000, ng/L x1"
+Kidney & Metabolic Health,"Phosphorus, Serum","Phosphorus, Serum","Inorganic phosphorus, PHOS, P, PO4, Phosphate",mg/dL,"mmol/L, µmol/L, mg/100mL, mg%, mg/L, µg/mL","mmol/L /0.3226, µmol/L /322.5806, mg/100mL x1, mg% x1, mg/L /10, µg/mL /10"
+Digestive Health,Globulin,Globulin,,gm/dL,"g/L, g/dL, g/100mL, g%, mg/mL",g/L / 10; g/dL × 1; g/100mL × 1; g% × 1; mg/mL / 10
+Kidney & Metabolic Health,Total Protein,Total Protein,"Serum total protein, TP",gm/dL,"g/l, g/100ml, g%, mg/ml","g/l /10, g/100ml x1, g% x1, mg/ml /10"
+Kidney & Metabolic Health,Albumin/Globulin Ratio,Albumin/Globulin Ratio,,,,Albumin/Globulin
+Kidney & Metabolic Health,"Creatinine, Serum","Creatinine, Serum","Creat; Blood Creatinine; Serum Creatinine; Urine Creatinine, Crea",mg/dL,"mmol/l, µmol/l, mg/100ml, mg%, mg/l, µg/ml","mmol/l /0.0884, µmol/l /88.4017, mg/100ml x1, mg% x1, mg/l /10, µg/ml /10"
+Kidney & Metabolic Health,Urea Serum,Urea Serum,Urea ,mg/dL,"mmol/L, µmol/L,  mg/100mL, mg%, mg/L, µg/mL","mmol/L / 0.1665, µmol/L / 166.5002,  mg/100mL x1, mg% x1, mg/L / 10, µg/mL / 10"
+Kidney & Metabolic Health,"Uric Acid, Serum","Uric Acid, Serum","Serum Urate, UA",mg/dL,"mmol/L, µmol/L,  mg/100mL, mg%, mg/L, µg/mL","mmol/L / 0.0595, µmol/L / 59.4849,  mg/100mL x1, mg% x1, mg/L / 10, µg/mL / 10"
+Cardiac Health,"Sodium, Serum","Sodium, Serum",Na+,mmol/L,mEq/L,mEq/L x1
+Cardiac Health,"Potassium, Serum","Potassium, Serum",K+,mmol/L,mEq/L,mEq/L x1
+Kidney & Metabolic Health,"Chloride, Serum","Chloride, Serum","Cl, Cl-",mmol/L,mEq/L,mEq/L x1
+Cardiac Health,Cholestrol / HDL Ratio,Cholestrol / HDL Ratio,,,,
+Cardiac Health,LDL/HDL Ratio,LDL/HDL Ratio,,,,
+Immune Health,Absolute Lymphocyte CountBlood,Absolute Lymphocyte CountBlood,,cells/cu.mm,"10^9/L, G/L, Gpt/L, cells/L, 10^3/µL, 1000/µL, 10^3/mm^3, 1000/mm^3, K/µL, K/mm^3, cells/µL",10^9/L × 1000; G/L × 1000; Gpt/L × 1000; cells/L / 10^6; 10^3/µL × 1000;1000/µL × 1000; 10^3/mm³ × 1000; 1000/mm³ × 1000; K/µL × 1000; K/mm³ × 1000; cells/µL× 1
+Immune Health,Absolute Monocyte Count,Absolute Monocyte Count,,cells/cu.mm,"10^9/L, G/L, Gpt/L, cells/L, 10^3/µL, 1000/µL, 10^3/mm^3, 1000/mm^3, K/µL, K/mm^3, cells/µL",10^9/L × 1000; G/L × 1000; Gpt/L × 1000; cells/L / 10^6; 10^3/µL × 1000;1000/µL × 1000; 10^3/mm³ × 1000; 1000/mm³ × 1000; K/µL × 1000; K/mm³ × 1000; cells/µL× 1
+Immune Health,Absolute Basophils CountBlood,Absolute Basophils CountBlood,,cells/cu.mm,"10^9/L, G/L, Gpt/L, cells/L, 10^3/µL, 1000/µL, 10^3/mm^3, 1000/mm^3, K/µL, K/mm^3, cells/µL",10^9/L × 1000; G/L × 1000; Gpt/L × 1000; cells/L / 10^6; 10^3/µL × 1000;1000/µL × 1000; 10^3/mm³ × 1000; 1000/mm³ × 1000; K/µL × 1000; K/mm³ × 1000; cells/µL× 1
+Cardiac Health,MCHC (Mean Corpuscular Hb Concn.),MCHC (Mean Corpuscular Hb Concn.),,g/dL,"mmol/L, µmol/L, g/L, g/100mL, g%, mg/mL, %","mmol/L× 1.611, µmol/L× 0.00161, g/L / 10, g/100mL× 1, g%× 1, mg/mL/10, %× 1"
+Digestive Health,rdw,RDW (Red Cell Distribution Width),,%,%,%× 1
+Digestive Health,wbc,Total Leucocytes (WBC) Count,,cells/cu.mm,"10^9/L, G/L, Gpt/L, cells/L, 10^3/µL, 1000/µL, 10^3/mm^3, 1000/mm^3, K/µL, K/mm^3, cells/µL",10^9/L × 1000; G/L × 1000; Gpt/L × 1000; cells/L / 10^6; 10^3/µL × 1000;1000/µL × 1000; 10^3/mm³ × 1000; 1000/mm³ × 1000; K/µL × 1000; K/mm³ × 1000; cells/µL× 1
+Immune Health,Neutrophils(%),Neutrophils,,%,%,%× 1
+Immune Health,Lymphocytes(%),Lymphocytes,,%,%,%× 1
+Immune Health,Monocytes(%),Monocytes,,%,%,%× 1
+Immune Health,Eosinophils(%),Eosinophils,,%,%,%× 1
+Immune Health,Basophils(%),Basophils,,%,%,%× 1
+Cardiac Health,PCV (Packed Cell Volume),PCV (Packed Cell Volume),,%,%,%× 1
+Cardiac Health,Erythrocyte (RBC) Count,Erythrocyte (RBC) Count,"Erythrocytes, RBC Count, Erythrocyte Count, Red Blood Cells Count",mill/cu.mm,"10^12/L, T/L, Tpt/L, 10^6/µL, 10^6/mm^3, M/µL, cells/µL, cells/mm^3, cells/L","10^12/L× 1, T/L× 1, Tpt/L× 1, 10^6/µL× 1, 10^6/mm^3× 1, M/µL× 1, cells/µL/10^6, cells/mm^3/10^6, cells/L/10^12"
+Cardiac Health,MPV (Mean Platelet Volume),MPV (Mean Platelet Volume),,fL,"µm^3, cu µm, cubic µm","µm^3× 1, cu µm× 1, cubic µm× 1"
+Digestive Health,plr,Platelet/Lymphocyte Ratio,,,,Platelet count/Absolute Lymphocyte CountBlood
+Digestive Health,lmr,Lymphocyte/Monocyte Ratio,,,,Absolute Lymphocyte CountBlood /Absolute Monocyte Count
+Kidney & Metabolic Health,BUN Serum,"BUN, Serum","Blood Urea Nitrogen (BUN), Urea Nitrogen",mg/dL,"mmol/L, µmol/L, mg/100mL, mg%, mg/L, µg/mL","mmol/L /0.3571, µmol/L /357.1429, mg/100mL x1, mg% x1, mg/L /10, µg/mL /10"
+Cardiac Health,UIBC (Unsaturated Iron Binding Capacity),UIBC (Unsaturated Iron Binding Capacity),"Unsaturated Iron - Binding Capacity, Iron indices, iron profile, unsaturated iron binding capacity, UIBC",µg/dL,"mmol/l, µmol/l,µg/100ml, µg%, µg/l, ng/ml","mmol/l / 0.0002, µmol/l / 0.1791, µg/100ml x1, µg% x1, µg/l /10, ng/ml /10, mg/L x100"
+Digestive Health,mcv,MCV (Mean Corpuscular Volume),Mean cell volume (MCV),fL,"µm^3, cu µm, cubic µm","µm^3 x1, cu µm x1, cubic µm x1"
+Immune Health,ttg,TISSUE TRANSGLUTAMINASE - IGA (TTG),TISSUE TRANSGLUTAMINASE - IGA (TTG),AU/mL,U/mL,U/mL x1

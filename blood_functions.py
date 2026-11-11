@@ -1026,7 +1026,7 @@ VISIBLE_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated suscepti
 # rather than one column per lab). If both are present we pivot the
 # rows into one wide record per patient before evaluating.
 LONG_FORMAT_PARAM_COL_CANDIDATES = {"parameter", "test", "test_name", "lab", "lab_name"}
-LONG_FORMAT_VALUE_COL_CANDIDATES = {"value", "result", "result_value", "lab_value"}
+LONG_FORMAT_VALUE_COL_CANDIDATES = {"converted_value", "result", "result_value", "lab_value"}
 
 
 def _normalize_key(name: str) -> str:

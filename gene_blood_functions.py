@@ -132,7 +132,7 @@ def load_patient_data(monogenic_json, prs_json, apoe_json, blood_csv_path, sex, 
         for row in reader:
             key = row["parameter"].strip().lower()
             # value = row["value"].strip()
-            value = row["value"].strip().replace(",", "")  #replace commas in numbers (e.g. 1,234.56) to avoid float conversion errors
+            value = row["converted_value"].strip().replace(",", "")  #replace commas in numbers (e.g. 1,234.56) to avoid float conversion errors
 
             if key == "sex":
                 csv_sex = value.strip().lower() or None
