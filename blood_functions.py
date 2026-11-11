@@ -84,8 +84,8 @@ def _map_category_message(category: str, all_markers: str = "") -> str:
         return "To discuss with General Practitioner"
     elif category == "Elevated susceptibility":
         return "Worth acting on for prevention"
-    elif category == "Typical" and all_markers.strip():
-        return "Worth acting on for prevention"
+    # elif category == "Typical" and all_markers.strip():
+    #     return "Worth acting on for prevention"
     else:
         return "Typical - nothing to act on"
     
