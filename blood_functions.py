@@ -1020,7 +1020,7 @@ PATIENT_COLUMNS = {"patient_id", "sex", "age"}
 
 # Only these categories are written to the output. Anything else
 # (i.e. "" / no pattern met) is filtered out of the report.
-OUTPUT_FIELDNAMES = ["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p"]
+OUTPUT_FIELDNAMES = ["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status", "HLA_Allele"]
 VISIBLE_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated susceptibility", "Typical"}
 # Columns that indicate a "long format" CSV (one row per lab parameter,
 # rather than one column per lab). If both are present we pivot the
@@ -1152,7 +1152,9 @@ def process_csv(input_path: str, output_path: str) -> None:
                 "RSID_m": "", 
                 "Pathogenicity_m": "", 
                 "Elevation_p": "", 
-                "Threshold_p": ""
+                "Threshold_p": "",
+                "APOE_Status": "",
+                "HLA_Allele": "",
             })
 
     with open(output_path, "w", newline="", encoding="utf-8") as f_out:

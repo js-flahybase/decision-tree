@@ -1,0 +1,80 @@
+domain,parameter,report_name,value,unit,biological reference interval,normalized ref,remark,converted_value,threshold_unit,normalized_ref_converted
+,sex,Age / Gender,male,,,,,male,,
+,age,Age / Gender,24,,,,,24.0,,
+"Brain Health, Immune Health",total_cholesterol,"Cholesterol Total, Serum",154.0,mg/dL,Desirable: < 200 Borderline High: 200-239 High: >= 240,<200,Normal,154.0,mg/dL,<200
+"Brain Health, Immune Health, Cardiac Health",ldl_c,LDL Cholesterol,85.36,mg/dL,Optimal: < 100 Near Optimal: 100-129 Borderline high: 130-159 High: 160-189 Very High: >= 190,<100,Normal,85.36,mg/dL,<100
+"Brain Health, Immune Health, Digestive Health, Cardiac Health",triglycerides,"Triglycerides, Serum",42.2,mg/dL,Normal: < 150 Borderline High: 150-199 High: 200-499 Very High: >= 500,<150,Normal,42.2,mg/dL,<150
+"Brain Health, Immune Health, Digestive Health, Cardiac Health",hdl_c,HDL Cholesterol Direct,60.2,mg/dL,Major risk factor for heart disease: < 40 Negative risk factor for heart disease: >= 60,>=60,Normal,60.2,mg/dL,>=60
+"Cardiac Health, Brain Health, Respiratory Health, Digestive Health, Skin Health, Immune Health",crp,HsCRP (High Sensitivity CRP),1.15,mg/L,<= 3,<=3,Normal,1.15,mg/L,<=3
+"Respiratory Health, Skin Health, Cardiac Health",eosinophils,Absolute Eosinophil Count,59,/c.mm,20-500,20-500,Normal,0.059000000000000004,10^9/L,0.02-0.5
+Respiratory Health,neutrophils,Absolute Neutrophils Count,3029,cells/cu.mm,2000-7000,2000-7000,Normal,3.029,10^9/L,2-7
+Respiratory Health,fibrinogen,Fibrinogen,316,mg/dL,200-400,200-400,Normal,316.0,mg/dL,200-400
+Endocrine Health,tsh,"TSH (Thyroid Stimulating Hormone) - Ultrasensitive, Serum",1.93,µIU/mL,0.27-4.2,0.27-4.2,Normal,1.93,µIU/mL,0.27-4.2
+Endocrine Health,free_t3,FT3 (Free Triiodothyronine),2.68,pg/mL,2.5-4.42,2.5-4.42,Normal,2.68,pg/mL,2.5-4.42
+Endocrine Health,free_t4,FT4 (Free Thyroxine),1.56,ng/dL,1-1.7,1-1.7,Normal,1.56,ng/dL,1-1.7
+Endocrine Health,tpoab,"Microsomal (TPO) Antibody Titre, Serum",11.70,IU/mL,<= 5.61,<= 5.61,High,11.7,IU/mL,<= 5.61
+"Digestive Health, Cardiac Health",hemoglobin,Haemoglobin (Hb),15.1,g/dL,13.0-17.0,13.0-17.0,Normal,15.1,gm/dL,13-17
+Digestive Health,albumin,"Albumin, Serum",4.75,gm/dL,3.8-5.0,3.8-5.0,Normal,4.75,gm/dL,3.8-5
+"Kidney & Metabolic Health, Digestive Health",ast,SGOT (AST),18.0,U/L,8-38,8-38,Normal,18.0,U/L,8-38
+Kidney & Metabolic Health,alt,SGPT (ALT),14.0,U/L,4-44,4-44,Normal,14.0,U/L,4-44
+"Kidney & Metabolic Health, Digestive Health",ggt,Gamma GT (GGTP),13.0,U/L,12-64,12-64,Normal,13.0,U/L,12-64
+Digestive Health,fib4,Fibrosis-4 (FIB-4),0.7401,,,,,0.7401,ratio,
+Digestive Health,platelets,Platelet count,156,10^3/µL,150-410,150-410,Normal,156.0,x10^3/µl,150-410
+Digestive Health,ast/alt,SGOT (AST)/SGPT (ALT) Ratio,1.286,,,,,1.286,ratio,
+"Skin Health, Immune Health, Digestive Health",esr,ESR (Erythrocyte Sedimentation Rate),2,mm/hr,<= 14,<= 14,Normal,2.0,mm/hr,<= 14
+"Skin Health, Digestive Health",nlr,Neutrophil/Lymphocyte Ratio,0.001307,,,,,0.001307,ratio,
+"Skin Health, Respiratory Health",ige,IgE Total antibody,65.6,IU/mL,0-114,0-114,Normal,65.6,IU/mL,0-114
+Endocrine Health,fasting_glucose,Glucose Fasting,86,mg/dL,Normal: 70-99 Prediabetic: 100-125 Diabetes mellitus: >= 126,70-99,Normal,86.0,mg/dL,70-99
+Endocrine Health,fasting_insulin,Insulin - Fasting,6.60,µIU/mL,Fasting: 2-25,2-25,Normal,6.6,µIU/mL,2-25
+"Endocrine Health, Cardiac Health, Digestive Health",hba1c,HbA1C- Glycated Haemoglobin,5.1,%,Non-diabetic: <= 5.6 Pre-diabetic: 5.7-6.4 Diabetic: >= 6.5,<5.7,Normal,5.1,%,<5.7
+Kidney & Metabolic Health,calcium,"Calcium, Serum",10.0,mg/dL,8.4-10.2,8.4-10.2,Normal,10.0,mg/dL,8.4-10.2
+Muscle Health,ck,CPK Total,202,U/L,30-200,30-200,High,202.0,U/L,30-200
+Cardiac Health,non_hdl_c,Non HDL Cholesterol,93.80,mg/dL,Optimal: < 130 Desirable: 130-159 Borderline high: 160-189 High: 190-220 Very High: >= 220,<130,Normal,93.8,mg/dL,<130
+Cardiac Health,vldl,VLDL Cholesterol,8.44,mg/dL,2-30,2-30,Normal,8.44,mg/dL,2-30
+Cardiac Health,apob,Apolipoproteins B,61.7,mg/dL,66-133,66-133,Low,61.7,mg/dL,66-133
+Cardiac Health,lpa,Lipoprotein(a),12,mg/dL,0-30,0-30,Normal,12.0,mg/dL,0-30
+Kidney & Metabolic Health,total_bilirubin,Bilirubin Total,0.56,mg/dL,0.3-1.2,0.3-1.2,Normal,0.56,mg/dL,0.3-1.2
+Kidney & Metabolic Health,direct_bilirubin,Bilirubin Direct,0.18,mg/dL,0-0.3,0-0.3,Normal,0.18,mg/dL,0-0.3
+Kidney & Metabolic Health,indirect_bilirubin,Bilirubin- Indirect,0.38,mg/dL,0.1-1.0,0.1-1.0,Normal,0.38,mg/dL,0.1-1
+Kidney & Metabolic Health,alp,"Alkaline Phosphatase, Serum",89,U/L,53-128,53-128,Normal,89.0,U/L,53-128
+Digestive Health,ferritin,Ferritin,37.46,ng/mL,30-400,30-400,Normal,37.46,ng/mL,30-400
+Digestive Health,transferrin_saturation,Transferin Saturation,25,%,14-50,14-50,Normal,25.0,%,14-50
+Cardiac Health,mch,MCH (Mean Corpuscular Hb),28.8,pg,27-32,27-32,Normal,28.8,pg,27-32
+Cancer,total_psa,Total PSA (Prostate Specific Antigen),0.454,ng/mL,Conventional: 0-4,0-4,Normal,0.454,ng/mL,0-4
+Cardiac Health,TIBC,TIBC,399,µg/dL,250-450,250-450,Normal,399.0,µg/dL,250-450
+,eag,Estimated Average Glucose (eAG),99.67,mg/dL,,,,99.67,mg/dL,
+Cardiac Health,"Iron, Serum","Iron, Serum",101.5,µg/dL,65-175,65-175,Normal,101.5,µg/dL,65-175
+Endocrine Health,Vitamin D Total - 25 Hydroxy (OH),Vitamin D Total - 25 Hydroxy (OH),36.75,ng/mL,Deficiency: < 20 Insufficiency: 21-29 Sufficiency: > 30 Hypervitaminosis: > 100,Deficiency: < 20 Insufficiency: 21-29 Sufficiency: > 30 Hypervitaminosis: > 100,,36.75,ng/mL,Deficiency: < 20 Insufficiency: 21-29 Sufficiency: > 30 Hypervitaminosis: > 100
+Brain Health,Vitamin B12 (Cyanocobalamin),Vitamin B12 (Cyanocobalamin),331.4,pg/mL,211-911,211-911,Normal,331.4,pg/mL,211-911
+Kidney & Metabolic Health,"Phosphorus, Serum","Phosphorus, Serum",4.6,mg/dL,2.6-4.4,2.6-4.4,High,4.6,mg/dL,2.6-4.4
+Digestive Health,Globulin,Globulin,2.88,g/dL,1.8-3.6,1.8-3.6,Normal,2.88,gm/dL,1.8-3.6
+Kidney & Metabolic Health,Total Protein,Total Protein,7.63,gm/dL,6.7-8.3,6.7-8.3,Normal,7.63,gm/dL,6.7-8.3
+Kidney & Metabolic Health,Albumin/Globulin Ratio,Albumin/Globulin Ratio,1.65,,1.1-2.2,1.1-2.2,Normal,1.65,,1.1-2.2
+Kidney & Metabolic Health,"Creatinine, Serum","Creatinine, Serum",1.01,mg/dL,0.6-1.3,0.6-1.3,Normal,1.01,mg/dL,0.6-1.3
+Kidney & Metabolic Health,Urea Serum,Urea,32.8,mg/dL,19-44,19-44,Normal,32.8,mg/dL,19-44
+Kidney & Metabolic Health,"Uric Acid, Serum","Uric Acid, Serum",6.4,mg/dL,4.0-7.0,4.0-7.0,Normal,6.4,mg/dL,4-7
+Cardiac Health,"Sodium, Serum","Sodium, Serum",143,mmol/L,"136-149 Premature, cord: 116-140 Premature 48 hrs: 128-148 Newborn cord: 126-166 Newborn: 133-146",136-149,Normal,143.0,mmol/L,136-149
+Cardiac Health,"Potassium, Serum","Potassium, Serum",4.56,mmol/L,"3.8-5.0 Premature cord: 5-10.2 Premature , 48 hrs: 3-6 Newborn cord: 5.6-12 Newborn: 3.7-5.9",3.8-5.0,Normal,4.56,mmol/L,3.8-5
+Kidney & Metabolic Health,"Chloride, Serum","Chloride, Serum",104.2,mmol/L,98-106,98-106,Normal,104.2,mmol/L,98-106
+Cardiac Health,Cholestrol / HDL Ratio,Cholestrol / HDL Ratio,2.56,,3.5-5,3.5-5,Low,2.56,,3.5-5
+Cardiac Health,LDL/HDL Ratio,LDL/HDL Ratio,1.42,,2.5-3.5,2.5-3.5,Low,1.42,,2.5-3.5
+Immune Health,Absolute Lymphocyte CountBlood,Absolute Lymphocyte Count,2317,/c.mm,1000-3000,1000-3000,Normal,2317.0,cells/cu.mm,1000-3000
+Immune Health,Absolute Monocyte Count,Absolute Monocyte Count,535,/c.mm,200-1000,200-1000,Normal,535.0,cells/cu.mm,200-1000
+Immune Health,Absolute Basophils CountBlood,Absolute Basophil Count,0,cells/cu.mm,20-100,20-100,Low,0.0,cells/cu.mm,20-100
+Cardiac Health,MCHC (Mean Corpuscular Hb Concn.),MCHC (Mean Corpuscular Hb Concn.),30.4,g/dL,31.5-34.5,31.5-34.5,Low,30.4,g/dL,31.5-34.5
+Digestive Health,rdw,RDW (Red Cell Distribution Width),12.7,%,11.5-14.0,11.5-14.0,Normal,12.7,%,11.5-14
+Digestive Health,wbc,Total Leucocytes (WBC) Count,"5,940",/cu.mm,4000-10000,4000-10000,Normal,5940.0,cells/cu.mm,4000-10000
+Immune Health,Neutrophils(%),Neutrophils,51,%,40-80,40-80,Normal,51.0,%,40-80
+Immune Health,Lymphocytes(%),Lymphocytes,39,%,20-40,20-40,Normal,39.0,%,20-40
+Immune Health,Monocytes(%),Monocytes,9,%,2.0-10,2.0-10,Normal,9.0,%,2-10
+Immune Health,Eosinophils(%),Eosinophils,1,%,1-6,1-6,Normal,1.0,%,1-6
+Immune Health,Basophils(%),Basophils,0,%,0-2,0-2,Normal,0.0,%,0-2
+Cardiac Health,PCV (Packed Cell Volume),PCV (Packed Cell Volume),49.7,%,40-50,40-50,Normal,49.7,%,40-50
+Cardiac Health,Erythrocyte (RBC) Count,Erythrocyte (RBC) Count,5.25,mill/cu.mm,4.5-5.5,4.5-5.5,Normal,5.25,mill/cu.mm,4.5-5.5
+Cardiac Health,MPV (Mean Platelet Volume),MPV (Mean Platelet Volume),11.9,fL,6-9.5,6-9.5,High,11.9,fL,6-9.5
+Digestive Health,plr,Platelet/Lymphocyte Ratio,0.06733,,,,,0.06733,ratio,
+Digestive Health,lmr,Lymphocyte/Monocyte Ratio,4.331,,,,,4.331,ratio,
+Kidney & Metabolic Health,BLOOD UREA NITROGEN (BUN),"BUN, Serum",15.3,mg/dL,8.9-20.6,8.9-20.6,Normal,15.3,mg/dL,8.9-20.6
+Cardiac Health,UIBC (Unsaturated Iron Binding Capacity),UIBC (Unsaturated Iron Binding Capacity),297.8,µg/dL,120-470,120-470,Normal,297.8,µg/dL,120-470
+Digestive Health,mcv,MCV (Mean Corpuscular Volume),94.7,fL,83-101,83-101,Normal,94.7,fL,83-101
+Immune Health,ttg,tTG (Tissue Transglutaminase) - IgA antibody,2.03,AU/mL,Negative: < 20.0 Positive: >= 20.0,< 20.0,Normal,2.03,AU/mL,< 20

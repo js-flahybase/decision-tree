@@ -3,13 +3,14 @@ import json
 import csv
 
 # example run command:
-# python script.py monogenic.json prs.json apoe.json blood.csv results.csv --thresholds thresholds_lab_a.json --sex male --age 35
+# python script.py monogenic.json prs.json apoe.json hla.json blood.csv results.csv --thresholds thresholds_lab_a.json --sex male --age 35
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run genetic risk evaluation across all conditions")
     parser.add_argument("monogenic_json", help="Path to the monogenic pathogenic/likely-pathogenic variants JSON")
     parser.add_argument("prs_json", help="Path to the polygenic PRS scores JSON")
     parser.add_argument("apoe_json", help="Path to the APOE status JSON")
+    parser.add_argument("hla_json", help="Path to the HLA-celiac JSON")
     parser.add_argument("blood_csv", help="Path to the blood report CSV")
     parser.add_argument("output_csv", help="Path to write the results CSV")
     parser.add_argument("--sex", required=False, choices=["male", "female"], default=None, help="Patient's biological sex (optional override on csv extracted value)") # making it optional override
@@ -34,7 +35,7 @@ PATHOGENIC_VALUES = {"pathogenic", "likely pathogenic", "likely_pathogenic", "pa
 ELEVATED_CATEGORIES = {"elevated", "moderately_elevated", "moderately elevated"}
 
 # genentics part from result jsons 
-def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path):
+def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path, hla_json_path):
     """
     Reads the three JSON files (monogenic pathogenic variants, polygenic PRS
     scores, APOE status) and returns a single genetics dict:
@@ -85,6 +86,17 @@ def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path
         flagged_genes.append("APOE")
         # acmg_genes.append("APOE") # apoe now not assigned to acmg list by default.
 
+    # --- 4. HLA-celiac condition ---
+    hla_allele = ""
+    with open(hla_json_path) as f:
+        hla_data = json.load(f)
+        for entry in hla_data:
+            pos = (entry.get("Celiac_Risk_Interpretation") or "").strip().lower()
+            if pos == "positive":
+                flagged_genes.append("HLA-DQA1/HLA-DQB1")
+                hla_allele = entry.get("Alleles", "")
+
+    
     return {
         "flagged_genes": flagged_genes,
         "acmg_genes": acmg_genes,
@@ -92,6 +104,7 @@ def build_genetics_from_jsons(monogenic_json_path, prs_json_path, apoe_json_path
         "prs_categories": prs_categories,
         "apoe_status": apoe_status,
         "monogenic_lookup": monogenic_lookup,
+        "hla_allele": hla_allele,
     }
 
 # match prs json syntax with condition's names used here
@@ -115,7 +128,7 @@ PRS_CONDITION_KEY_MAP = {
 }
 
 # combining genentic (gene, prs), blood (labs), and patient info (sex, age)
-def load_patient_data(monogenic_json, prs_json, apoe_json, blood_csv_path, sex, age):
+def load_patient_data(monogenic_json, prs_json, apoe_json, hla_json, blood_csv_path, sex, age):
     """
     Patient-reported context (family_history, symptoms, past_history) is 
     NOT included here. sex/age are read from the blood csv by default. 
@@ -150,7 +163,7 @@ def load_patient_data(monogenic_json, prs_json, apoe_json, blood_csv_path, sex, 
     #     labs.get("ferritin") is not None and labs.get("transferrin_saturation") is not None
     # )
     
-    genetics = build_genetics_from_jsons(monogenic_json, prs_json, apoe_json)
+    genetics = build_genetics_from_jsons(monogenic_json, prs_json, apoe_json, hla_json)
     
     final_sex = sex or csv_sex
     final_age = age if age is not None else csv_age
@@ -379,7 +392,7 @@ CONDITION_GENES = {
     "Muscular Dystrophy": ["DMD", "FKRP", "LMNA", "SGCA", "SGCB"],
     "Gilbert Syndrome": ["UGT1A1"],
     "Hereditary Hemochromatosis": ["HFE"],
-    "Celiac Disease": ["HLA-DQ2", "HLA-DQ8"],
+    "Celiac Disease": ["HLA-DQA1/HLA-DQB1"],
     "Familial Hypercholesterolemia": ["LDLR", "APOB", "PCSK9"],
     "Cardiomyopathy": [
         "ACTC1", "BAG3", "DES", "FLNC", "LMNA", "MYBPC3", "MYH7", "MYL2",
@@ -472,6 +485,14 @@ def get_apoe_status(genetics, condition_name):
     if "APOE" not in genetics.get("flagged_genes", []):
         return ""
     return genetics.get("apoe_status", "")
+
+def get_hla_allele(genetics, condition_name):
+    required_genes = CONDITION_GENES.get(condition_name, [])
+    if required_genes == NO_GENE_GATE or "HLA-DQA1/HLA-DQB1" not in required_genes:
+        return ""
+    if "HLA-DQA1/HLA-DQB1" not in genetics.get("flagged_genes", []):
+        return ""
+    return genetics.get("hla_allele", "")
 
 def is_gene_flagged(genetics, condition_name):
     required_genes = CONDITION_GENES.get(condition_name, [])
@@ -1940,7 +1961,7 @@ def evaluate_celiac_disease(labs, patient, genetics, family_history, past_histor
 
 # calling:
 
-data = load_patient_data(args.monogenic_json, args.prs_json, args.apoe_json, args.blood_csv, sex=args.sex, age=args.age) #remains same, these args remain override call.
+data = load_patient_data(args.monogenic_json, args.prs_json, args.apoe_json, args.hla_json, args.blood_csv, sex=args.sex, age=args.age) #remains same, these args remain override call.
 
 results = [
     # --- 14: labs/genetics-driven conditions ---
@@ -2111,6 +2132,7 @@ for entry in active_findings:
     entry["RSID_m"] = rsid_m
     entry["Pathogenicity_m"] = patho_m
     entry["APOE_Status"] = get_apoe_status(data["genetics"], entry["Condition"])
+    entry["HLA_Allele"] = get_hla_allele(data["genetics"], entry["Condition"])
 
     elevation = get_prs_category(data["genetics"], entry["Condition"]) or ""
     entry["Elevation_p"] = elevation
@@ -2126,7 +2148,7 @@ for entry in active_findings:
 
 
 with open(args.output_csv, "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status"])
+    writer = csv.DictWriter(f, fieldnames=["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status", "HLA_Allele"])
     writer.writeheader()
     writer.writerows(active_findings)
 

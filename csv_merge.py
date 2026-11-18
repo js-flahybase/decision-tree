@@ -34,7 +34,7 @@ def load_csv(path):
 def _is_empty(val):
     return val is None or val.strip() == "" or val.strip().lower() == "none"
 
-GENETIC_COLS = ["RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status"]
+GENETIC_COLS = ["RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p", "APOE_Status", "HLA_Allele"]
 
 def merge_rows(condition, gene_row, blood_row):
     """Returns the row to keep. Raises ValueError for impossible combinations."""

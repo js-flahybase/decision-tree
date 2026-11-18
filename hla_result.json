@@ -1,0 +1,22 @@
+[
+  {
+    "Category": "Immune Health",
+    "Gene Symbol": "HLA-DQA1/HLA-DQB1",
+    "preferredVarTitle": "HLA-DQ2.5/DQ2.2/DQ7.5/DQ8",
+    "condition": "Celiac disease",
+    "Alleles": "HLA-DQA1 alleles: *01:04 *02:01; HLA-DQB1 alleles: *05:03 *02:02",
+    "DQ2.5": "negative",
+    "DQ2.5_phase": "",
+    "DQ2.5_trans_route": "",
+    "DQ7.5": "not_detected",
+    "DQ2.2": "SINGLE_OR_DOSAGE_UNDETERMINED",
+    "DQ8": "negative",
+    "Risk_Category": "EQUIVOCAL (DQ2.2)",
+    "Celiac_Risk_Interpretation": "POSITIVE",
+    "Findings": "HLA-DQA1 alleles: 01:04, 02:01. HLA-DQB1 alleles: 05:03, 02:02. DQ2.2-associated alleles detected. A single DQ2.2 haplotype is generally equivocal for celiac susceptibility; a double dose is permissive. Dosage cannot be determined from unphased calls unless homozygosity is evident.",
+    "Interpretation": "HLA typing indicates genetic predisposition only. It does not diagnose or exclude celiac disease. Clinical interpretation requires serology, biopsy where indicated, and specialist review.",
+    "Notes": [
+      "DQ2.2-defining alleles detected once each, consistent with a single DQ2.2 haplotype. A single DQ2.2 haplotype is generally equivocal for celiac susceptibility, and dosage cannot be fully determined from unphased calls."
+    ]
+  }
+]
