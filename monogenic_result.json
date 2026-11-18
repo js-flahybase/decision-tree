@@ -1,5 +1,25 @@
 [
   {
+    "Category": "Respiratory Health",
+    "Gene Symbol": "TSLP",
+    "preferredVarTitle": "rs123456789",
+    "HGVS": "c.995_996dupAT",
+    "condition / ACMG Diseases": "Rhinitis",
+    "ClinVar Significance": "Pathogenic",
+    "ClinVar Stars": "2",
+    "Evidence": "At least two submitters agree, with no conflicting interpretations",
+    "Expert Panel": "",
+    "MOI": "AR",
+    "VAF": "0.5",
+    "COPIES": 1,
+    "Intervention": "",
+    "RAF_global": "1.2392955843898327e-06",
+    "RAF_SAS": "2.1963058136214887e-05",
+    "Findings": "TSLP gene has one heterozygous pathogenic variant detected that is associated with Atopic Dermatitis.",
+    "Interpretation": "Rhinitis follows an autosomal recessive inheritance pattern. Detection of a single pathogenic variant suggests carrier status. Two pathogenic variants, typically one inherited from each parent and confirmed to be in trans, are generally required for disease manifestation.",
+    "in_acmg": false
+  },
+  {
     "Category": "Skin Health, Vision",
     "Gene Symbol": "TSLP",
     "preferredVarTitle": "rs123456789",

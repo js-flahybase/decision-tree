@@ -12,7 +12,7 @@ Joints Health,Osteoarthritis,Elevated susceptibility,,,Polygenic Risk Classifica
 Brain Health,Parkinson's Disease,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,crp=1.15 (>=0.8),,,elevated,>99 percentile,,
 Skin Health,Psoriasis,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,crp=1.15 (>=0.8),,,elevated,>99 percentile,,
 Immune Health,Rheumatoid Arthritis,Typical,,,,Typical - nothing to act on,,,,typical,,,
-Respiratory Health,Rhinitis,Elevated susceptibility,TSLP,,Polygenic Risk Classification,Worth acting on for prevention,,,,moderately_elevated,>97 percentile,,
+Respiratory Health,Rhinitis,Elevated susceptibility,TSLP,,Polygenic Risk Classification,Worth acting on for prevention,,rs123456789,Pathogenic,moderately_elevated,>97 percentile,,
 Endocrine Health,Type 2 Diabetes,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,fasting_insulin=6.6 (>5),,,elevated,>99 percentile,,
 Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothing to act on,,,,,,,
 Muscle Health,Muscular Dystrophy,Typical,,,,Typical - nothing to act on,,,,,,,
