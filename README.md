@@ -79,6 +79,7 @@ Each result includes these columns:
 - **Elevation_p** — Elevation information (`Elevated` and `Moderately elevated`) from PRS assessment json
 - **Threshold_p** — Threshold in percentile for elevation from PRS assessment json 
 - **APOE_Status** — APOE status (`e3`, `e4`) if APOE gene was found among flagged genes
+- **HLA_Allele** — HLA allele information (`HLA-DQA1`, `HLA-DQB1`) for HLA among flagged genes
 
 This makes it possible to see *why* a category was reached, not just the final result.
 
@@ -92,6 +93,7 @@ This makes it possible to see *why* a category was reached, not just the final r
 | **Monogenic gene flags** | Monogenic (ClinVar-style) JSON — Pathogenic/Likely Pathogenic entries | List of gene names | `["HFE", "TP53"]` |
 | **Polygenic (PRS) scores** | Polygenic risk score JSON | Per-condition category (`typical` / `elevated` / `moderately_elevated`) | `"cad": {"category": "elevated"}` |
 | **APOE status** | APOE-specific JSON | Genotype string | `"e3/e4"` — contributes an `APOE` gene flag if an ε4 allele is present |
+| **HLA Allele** | HLA-specific JSON | Allele information | `HLA-DQA1/HLA-DQB1` — for HLA flag-dependent genetic conditions | 
 | **Threshold json (`lab specific`)** | Each Lab's ranges/triggers | Numbers/Ranges | `"HBA1C_ELEVATED": 6.5,` |
 | **Patient-reported context** (`family_history`, `symptoms`, `past_history`) | Asked to / reported by the patient | `True` / `False` | `family_history of Alzheimer's: True` |
 
@@ -104,6 +106,7 @@ Genetics: {
     'prs_elevated_conditions': {...},    # set of condition keys from the PRS JSON where category is elevated
     'prs_categories': {...},             # raw PRS category string per condition key
     'apoe_status': "e3/e4",              # raw APOE genotype string
+    'hla_allele': "`HLA-DQA1/HLA-DQB1"   # HLA Allele from HLA json
 }
 Labs : {'Blood parameter': value}
 ```
