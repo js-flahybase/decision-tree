@@ -309,6 +309,8 @@ HEMOGLOBIN_UPPER_HEMOCHROMATOSIS = _t("HEMOGLOBIN_UPPER_HEMOCHROMATOSIS")  # g/d
 # MCH_LOWER_CELIAC = 27                          # pg
 # MCHC_LOWER_CELIAC = 31.5                       # g/dL
 TTG_RANGE = _t("TTG_RANGE")                      # AU/mL (Celiac)
+IGE_EARLY = _t("IGE_EARLY")                      # IU/mL (Atopic/Eczema)
+IGE_LIKELY = _t("IGE_LIKELY")                    # IU/mL (Atopic/Eczema)
 
 # =============================================================================
 # Shared helper functions
@@ -706,18 +708,26 @@ def evaluate_atopic_dermatitis(labs, patient, genetics, family_history, past_his
         return [{"Condition": "Atopic Dermatitis", "Category": GENE_NOT_FOUND}]
 
     eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
     triggered = []
 
     eosinophil_likely = is_above(eosinophils, EOSINOPHILS_LIKELY)
     eosinophil_early = is_elevated(eosinophils, EOSINOPHILS_BORDERLINE) #and not is_above(eosinophils, EOSINOPHILS_LIKELY)
+    ige_likely = is_elevated(ige, IGE_LIKELY)
+    ige_early = is_elevated(ige, IGE_EARLY)
     if eosinophil_likely:
         note(triggered, "eosinophils", eosinophils, True, f">{EOSINOPHILS_LIKELY}")
     elif eosinophil_early:
         note(triggered, "eosinophils", eosinophils, True, f">={EOSINOPHILS_BORDERLINE}")
 
-    if eosinophil_likely or (eosinophil_likely and (symptoms or family_history or past_history)):
+    if ige_likely:
+        note(triggered, "ige", ige, True, f">={IGE_LIKELY}")
+    elif ige_early:
+        note(triggered, "ige", ige, True, f">={IGE_EARLY}")
+
+    if (eosinophil_likely and ige_likely) or ((eosinophil_likely and ige_likely) and (symptoms or family_history or past_history)):
         category = "Significant Pattern"
-    elif eosinophil_early:
+    elif eosinophil_early and ige_early:
         category = "Early Pattern"
     else:
         category = "Elevated susceptibility"
@@ -735,18 +745,26 @@ def evaluate_eczema(labs, patient, genetics, family_history, past_history, sympt
         return [{"Condition": "Eczema", "Category": GENE_NOT_FOUND}]
 
     eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
     triggered = []
 
     eosinophil_likely = is_above(eosinophils, EOSINOPHILS_LIKELY)
     eosinophil_early = is_elevated(eosinophils, EOSINOPHILS_BORDERLINE) #and not is_above(eosinophils, EOSINOPHILS_LIKELY)
+    ige_likely = is_elevated(ige, IGE_LIKELY)
+    ige_early = is_elevated(ige, IGE_EARLY)
     if eosinophil_likely:
         note(triggered, "eosinophils", eosinophils, True, f">{EOSINOPHILS_LIKELY}")
     elif eosinophil_early:
         note(triggered, "eosinophils", eosinophils, True, f">={EOSINOPHILS_BORDERLINE}")
 
-    if eosinophil_likely or (eosinophil_likely and (symptoms or family_history or past_history)):
+    if ige_likely:
+        note(triggered, "ige", ige, True, f">={IGE_LIKELY}")
+    elif ige_early:
+        note(triggered, "ige", ige, True, f">={IGE_EARLY}")
+
+    if (eosinophil_likely and ige_likely) or ((eosinophil_likely and ige_likely) and (symptoms or family_history or past_history)):
         category = "Significant Pattern"
-    elif eosinophil_early:
+    elif eosinophil_early and ige_early:
         category = "Early Pattern"
     else:
         category = "Elevated susceptibility"

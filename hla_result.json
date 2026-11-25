@@ -12,7 +12,7 @@
     "DQ2.2": "SINGLE_OR_DOSAGE_UNDETERMINED",
     "DQ8": "negative",
     "Risk_Category": "EQUIVOCAL (DQ2.2)",
-    "Celiac_Risk_Interpretation": "POSITIVE",
+    "Celiac_Risk_Interpretation": "NEGATIVE",
     "Findings": "HLA-DQA1 alleles: 01:04, 02:01. HLA-DQB1 alleles: 05:03, 02:02. DQ2.2-associated alleles detected. A single DQ2.2 haplotype is generally equivocal for celiac susceptibility; a double dose is permissive. Dosage cannot be determined from unphased calls unless homozygosity is evident.",
     "Interpretation": "HLA typing indicates genetic predisposition only. It does not diagnose or exclude celiac disease. Clinical interpretation requires serology, biopsy where indicated, and specialist review.",
     "Notes": [

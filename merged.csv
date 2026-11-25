@@ -18,7 +18,7 @@ Endocrine Health,Maturity-Onset Diabetes of the Young,Typical,,,,Typical - nothi
 Muscle Health,Muscular Dystrophy,Typical,,,,Typical - nothing to act on,,,,,,,
 Kidney & Metabolic Health,Gilbert Syndrome,Elevated susceptibility,UGT1A1,,,Worth acting on for prevention,direct_bilirubin=0.18 (<1),rs123456789,Pathogenic,,,,
 Digestive Health,Hereditary Hemochromatosis,Typical,,,,Typical - nothing to act on,,,,,,,
-Immune Health,Celiac Disease,Elevated susceptibility,HLA-DQA1/HLA-DQB1,,,Worth acting on for prevention,,,,,,,HLA-DQA1 alleles: *01:04 *02:01; HLA-DQB1 alleles: *05:03 *02:02
+Immune Health,Celiac Disease,Typical,,,,Typical - nothing to act on,,,,,,,
 Cardiac Health,Familial Hypercholesterolemia,Typical,,,,Typical - nothing to act on,,,,,,,
 Cardiac Health,Cardiomyopathy,Typical,,,,Typical - nothing to act on,,,,,,,
 Cardiac Health,Coronary Artery Disease,Elevated susceptibility,,,Polygenic Risk Classification,Worth acting on for prevention,,,,elevated,>99 percentile,,
