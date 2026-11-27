@@ -17,7 +17,7 @@ Two layers are involved:
 
 - **`agent.ts`** — the developer-facing API calling layer: where the technical-level system prompt lives. 
 
-- **`Prompt_extra.txt`** — What sequence to follow before reaching an evaluator and how to perform interpretations.
+- **`Prompt_bio.txt`** — What sequence to follow before reaching an evaluator and how to perform interpretations.
 
 - **`evaluator_example.py`** — It is a minimal, self-contained example (a  blood-based T2D evaluator) showing the two halves of one evaluator structure:
   1. a **schema** describing the inputs it expects (lab values, patient fields) and their types/units, and
