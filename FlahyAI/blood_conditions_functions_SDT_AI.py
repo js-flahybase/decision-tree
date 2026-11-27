@@ -1,0 +1,2077 @@
+"""
+Condition Evaluator Engine
+==========================
+ 
+Reads patient lab values (from a CSV) and evaluates a set of clinical
+"Significant Pattern" / "Early Pattern" rules, one function per
+condition, following the template:
+ 
+    def evaluate_<condition>(labs, patient):
+        # 2. Pull values from labs / patient
+        some_value = labs.get("some_value")
+        # 3. Check if values are abnormal
+        some_flag = is_elevated(some_value, SOME_THRESHOLD)
+        # 4. Decide category
+        if <strong combination met>:
+            category = "Significant Pattern"
+        elif <lighter combination met>:
+            category = "Early Pattern"
+        else:
+            category = ""
+        return [{
+            "Condition": "<Condition Name>",
+            "Category": category
+        }]
+
+ 
+CSV INPUT FORMAT
+-----------------
+The input CSV is expected to have one row per patient, with lab test
+names as columns (snake_case, see LAB_KEYS below) plus optional patient
+columns: patient_id, sex ("M"/"F"), age.
+ 
+Example columns:
+    patient_id, sex, age, fasting_glucose, hba1c, tsh, free_t4, ...
+ 
+THRESHOLDS
+-----------------
+All numeric thresholds used by the evaluators below are loaded from an
+external JSON file (a lab-specific thresholds.json, required, no default)
+rather than being hardcoded in this file. This lets clinical thresholds
+be tuned/reviewed per lab without touching the code. See _load_thresholds().
+ 
+Run:
+    python blood_functions.py input.csv output.csv [thresholds.json]
+
+"""
+
+import csv
+import functools
+import json
+import os
+import sys
+from typing import Optional, Dict, Any, List
+
+# family_history/past_history/symptoms are passed in directly by the
+# caller (e.g. a model's tool-call, which selects matching terms from
+# blood_conditions_user_context.json's vocab itself, enforced by that
+# tool's schema) - this script does no vocab matching of its own.
+#
+# USER_CONTEXT below is read only to populate each evaluate_*_schema's
+# enum lists at import time, straight from the JSON - never copied into
+# the schemas as frozen literals, so editing the JSON changes what every
+# schema offers without touching this file again.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+with open(os.path.join(SCRIPT_DIR, "blood_conditions_user_context.json")) as f:
+    USER_CONTEXT = json.load(f)
+
+# ---------------------------------------------------------------------------
+# 1. Generic helpers & Domain mapping
+# ---------------------------------------------------------------------------
+
+# kept live (unlike the rest of the CLI-only tail below) so the dispatcher can tag a
+# condition's result with its domain the same way the CLI's results assembly did.
+CONDITION_DOMAINS = {
+    "Type 2 Diabetes": "Endocrine Health",
+    "Hypothyroidism": "Endocrine Health",
+    "Maturity-Onset Diabetes of the Young": "Endocrine Health",
+    "Hyperthyroidism": "Endocrine Health",
+    "Coronary Artery Disease": "Cardiac Health",
+    "Asthma": "Respiratory Health",
+    "Rhinitis": "Respiratory Health",
+    "NAFLD": "Digestive Health",
+    "Inflammatory Bowel Disease": "Digestive Health",
+    "Hereditary Hemochromatosis": "Digestive Health",
+    "Eczema": "Skin Health",
+    "Atopic Dermatitis": "Skin Health",
+    "Prostate Cancer": "Cancer",
+    "Celiac Disease": "Immune Health"
+}
+
+
+INSUFFICIENT_DATA = "Insufficient Data"  # none of this condition's labs were provided - not the same as a tested-negative "Typical"
+
+
+# kept live (unlike the rest of the CLI-only tail below) - used by enrich_result()
+# so Snapshot Category comes from the function's own output, not a separate step.
+def _map_category_message(category: str, all_markers: str = "") -> str:
+    if category in ("Significant Pattern", "Early Pattern"):
+        return "To discuss with General Practitioner"
+    elif category == "Elevated susceptibility":
+        return "Worth acting on for prevention"
+    elif category == INSUFFICIENT_DATA:
+        return "Not enough data to assess - testing recommended"
+    # elif category == "Typical" and all_markers.strip():
+    #     return "Worth acting on for prevention"
+    else:
+        return "Typical - nothing to act on"
+
+
+# =============================================================================
+# Per-result enrichment (Domain/Blood Marker(s)/All Blood Marker(s)/Snapshot
+# Category) - this used to only happen in the CLI's now-dead process_csv
+# loop. Kept here, applied via with_enrichment() below, so every evaluate_*'s
+# OWN return value is already the fully enriched result - no separate step
+# needed wherever evaluate_* gets called from. Triggering PRS/RSID_m/
+# Pathogenicity_m/Elevation_p/Threshold_p stay blank placeholders here (same
+# as the CLI's own output) since this script has no genetics.
+# =============================================================================
+
+VISIBLE_TRIGGER_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated susceptibility"}
+
+
+def enrich_result(entry):
+    condition = entry["Condition"]
+    category = entry.get("Category", "")
+    entry["Domain"] = CONDITION_DOMAINS.get(condition, "General Health")
+    entry["Blood Marker(s)"] = entry.get("TriggeredValues", "") if category in VISIBLE_TRIGGER_CATEGORIES else ""
+    entry["All Blood Marker(s)"] = entry.get("TriggeredValues") or entry.get("PartialTriggered") or ""
+    entry["Snapshot Category"] = _map_category_message(category, entry["All Blood Marker(s)"])
+    entry.setdefault("DNA Marker(s)", "")
+    entry.setdefault("Triggering PRS", "")
+    entry.setdefault("RSID_m", "")
+    entry.setdefault("Pathogenicity_m", "")
+    entry.setdefault("Elevation_p", "")
+    entry.setdefault("Threshold_p", "")
+    entry.setdefault("APOE_Status", "")
+    entry.setdefault("HLA_Allele", "")
+    return entry
+
+
+def with_enrichment(fn):
+    """Wraps an evaluate_* function so its return value is already enriched -
+    nothing calling evaluate_* needs to know enrich_result exists at all."""
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        return [enrich_result(entry) for entry in fn(*args, **kwargs)]
+    return wrapped
+
+
+def _to_float(value) -> Optional[float]:
+    """Safely convert a value to float, returning None if not possible/blank."""
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    value = str(value).strip().replace(",", "")
+    if value == "" or value.lower() in ("na", "n/a", "none", "null"):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def is_elevated(value, threshold) -> bool:
+    """True if value >= threshold (High/Abnormal-high check)."""
+    v = _to_float(value)
+    t = _to_float(threshold)
+    if v is None or t is None:
+        return False
+    return v >= t
+
+
+def is_above(value, threshold) -> bool:
+    """True if value > threshold (strict)."""
+    v = _to_float(value)
+    t = _to_float(threshold)
+    if v is None or t is None:
+        return False
+    return v > t
+
+
+def is_low(value, threshold) -> bool:
+    """True if value <= threshold (Low check)."""
+    v = _to_float(value)
+    t = _to_float(threshold)
+    if v is None or t is None:
+        return False
+    return v <= t
+
+
+def is_below(value, threshold) -> bool:
+    """True if value < threshold (strict low)."""
+    v = _to_float(value)
+    t = _to_float(threshold)
+    if v is None or t is None:
+        return False
+    return v < t
+
+
+def in_range(value, low, high) -> bool:
+    """True if low <= value <= high."""
+    v = _to_float(value)
+    lo = _to_float(low)
+    hi = _to_float(high)
+    if v is None or lo is None or hi is None:
+        return False
+    return lo <= v <= hi
+
+
+def is_male(patient: Dict[str, Any]) -> bool:
+    sex = str(patient.get("sex", "")).strip().lower()
+    return sex in ("m", "male")
+
+
+def is_female(patient: Dict[str, Any]) -> bool:
+    sex = str(patient.get("sex", "")).strip().lower()
+    return sex in ("f", "female")
+
+
+def get_age(patient: Dict[str, Any]) -> Optional[float]:
+    return _to_float(patient.get("age"))
+
+
+# def fib4_score(age, ast, platelets, alt) -> Optional[float]:
+#     """FIB-4 = (age * AST) / (platelets * sqrt(ALT))"""
+#     age = _to_float(age)
+#     ast = _to_float(ast)
+#     platelets = _to_float(platelets)
+#     alt = _to_float(alt)
+#     if None in (age, ast, platelets, alt) or platelets == 0 or alt <= 0:
+#         return None
+#     try:
+#         return (age * ast) / (platelets * math.sqrt(alt))
+#     except (ValueError, ZeroDivisionError):
+#         return None
+
+
+def _fmt_values(**kwargs) -> str:
+    parts = []
+    for k, v in kwargs.items():
+        if v is None or str(v).strip() == "":
+            continue
+        parts.append(f"{k} = {v}")
+    return "; ".join(parts) if parts else "no data"
+
+def _track(triggered_list: list, name: str, value: Any, threshold: Any, op: str, condition_met: bool):
+    if condition_met:
+        v = _to_float(value)
+        if v is not None:
+            triggered_list.append(f"{name}={v} ({op}{threshold})")
+
+
+def _track_range(triggered_list: list, name: str, value: Any, low: Any, high: Any, condition_met: bool):
+    if condition_met:
+        v = _to_float(value)
+        if v is not None:
+            triggered_list.append(f"{name}={v} ({low}-{high})")
+# ---------------------------------------------------------------------------
+# 2. Thresholds — loaded from an external JSON file
+# ---------------------------------------------------------------------------
+#
+# The JSON file must contain two top-level objects:
+#   "THRESHOLDS"  -> threshold1, the "Significant Pattern" tier
+#   "THRESHOLDS2" -> threshold2, the "Early Pattern" tier
+#
+# Any value that needs to be a (low, high) range pair (e.g.
+# tsh_borderline_hypothyroid, free_t4_range) must be stored as a
+# 2-element JSON array; it gets converted to a Python tuple on load so
+# existing code that does THRESHOLDS2["key"][0] / [1] keeps working.
+ 
+# fixed: this was `sys.argv[3] if len(sys.argv) > 3 else None`, which is None on any
+# non-CLI import - THRESHOLDS/THRESHOLDS2 silently stayed {} for every evaluate_* call.
+# Default to the real thresholds file next to this script, same pattern as
+# blood_conditions_functions_AI.py's DEFAULT_THRESHOLDS_PATH; --thresholds/sys.argv[3]
+# still overrides this when run as a CLI script.
+DEFAULT_THRESHOLDS_PATH = os.path.join(SCRIPT_DIR, "Blood_metropolis_threshold.json")
+ 
+ 
+def _tupleize_ranges(d: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert any 2-element list values into tuples (for range thresholds)."""
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, list) and len(v) == 2 and all(isinstance(x, (int, float)) for x in v):
+            out[k] = tuple(v)
+        else:
+            out[k] = v
+    return out
+ 
+ 
+def _load_thresholds(path: str = DEFAULT_THRESHOLDS_PATH):
+    """Load THRESHOLDS and THRESHOLDS2 dicts from a JSON file."""
+    if path is None:
+        raise FileNotFoundError(
+            "No thresholds JSON path given. Pass one as the third CLI argument "
+            "(python blood_conditions_functions_SDT.py <input> <output> <thresholds.json>)."
+        )
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Thresholds JSON file not found at '{path}'. "
+            "Pass a valid path as the third CLI argument, or place a "
+            "thresholds.json file next to this script."
+        )
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Thresholds JSON file at '{path}' is not valid JSON: {e}")
+ 
+    if "THRESHOLDS" not in data or "THRESHOLDS2" not in data:
+        raise ValueError(
+            f"Thresholds JSON file at '{path}' must contain both "
+            "'THRESHOLDS' and 'THRESHOLDS2' top-level keys."
+        )
+ 
+    thresholds1 = _tupleize_ranges(data["THRESHOLDS"])
+    thresholds2 = _tupleize_ranges(data["THRESHOLDS2"])
+    return thresholds1, thresholds2
+ 
+ 
+# Module-level THRESHOLDS / THRESHOLDS2 populated at import time from the
+# default JSON path so existing evaluator functions (which reference the
+# module-level names directly) keep working unchanged. Call
+# load_thresholds_from_file() to reload from a different path (e.g. when
+# a custom path is given on the CLI).
+THRESHOLDS: Dict[str, Any] = {}
+THRESHOLDS2: Dict[str, Any] = {}
+ 
+ 
+def load_thresholds_from_file(path: str = DEFAULT_THRESHOLDS_PATH) -> None:
+    """(Re)load the module-level THRESHOLDS / THRESHOLDS2 dicts from JSON."""
+    global THRESHOLDS, THRESHOLDS2
+    t1, t2 = _load_thresholds(path)
+    THRESHOLDS = t1
+    THRESHOLDS2 = t2
+ 
+ 
+# Load thresholds at import time using the default path, if present, so
+# the module works out of the box. If it's missing, defer the error until
+# process_csv()/main actually needs the values (so e.g. `import
+# condition_evaluators` for its helper functions alone doesn't blow up).
+try:
+    load_thresholds_from_file()
+except (FileNotFoundError, ValueError) as _e:
+    print(f"[WARN] {_e}")
+ 
+
+
+# ---------------------------------------------------------------------------
+# 3. Evaluators — one per condition
+# ---------------------------------------------------------------------------
+
+def evaluate_type2_diabetes(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    fpg = labs.get("fasting_glucose")
+    hba1c = labs.get("hba1c")
+    # eag = labs.get("estimated_average_glucose_(eag)")
+    fasting_insulin = labs.get("fasting_insulin")
+
+    if fpg is None or hba1c is None or fasting_insulin is None:
+        return [{"Condition": "Type 2 Diabetes", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    fpg_flag = is_elevated(fpg, THRESHOLDS["fasting_plasma_glucose_high"])
+    hba1c_flag = is_elevated(hba1c, THRESHOLDS["hba1c_high"])
+    # eag_flag = is_elevated(eag, THRESHOLDS["eag_high"])
+    insulin_flag = is_above(fasting_insulin, THRESHOLDS["fasting_insulin_high"])
+
+    fpg_borderline_flag = in_range(fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"], THRESHOLDS2["fasting_plasma_glucose_borderline_high"])
+    hba1c_borderline_flag = in_range(hba1c, THRESHOLDS2["hba1c_borderline_low"], THRESHOLDS2["hba1c_borderline_high"])
+    insulin_borderline_flag=is_above(fasting_insulin,THRESHOLDS2["fasting_insulin_borderline_high"])
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if fpg_flag and hba1c_flag and insulin_flag or (fpg_flag and hba1c_flag and insulin_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
+        _track(triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
+        _track(triggered, "fasting_insulin", fasting_insulin, THRESHOLDS["fasting_insulin_high"], ">", insulin_flag)
+    elif fpg_borderline_flag and hba1c_borderline_flag and insulin_borderline_flag or (fpg_borderline_flag and hba1c_borderline_flag and insulin_borderline_flag and (symptoms or family_history or past_history)):
+        category = "Early Pattern"
+        _track_range(triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"], THRESHOLDS2["fasting_plasma_glucose_borderline_high"], fpg_borderline_flag)
+        _track_range(triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_low"], THRESHOLDS2["hba1c_borderline_high"], hba1c_borderline_flag)
+        _track(triggered, "fasting_insulin", fasting_insulin, THRESHOLDS2["fasting_insulin_borderline_high"], ">", insulin_borderline_flag)
+    else:
+        category = "Typical"
+        if fpg_flag:
+            _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
+        elif fpg_borderline_flag:
+           _track_range(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_low"], THRESHOLDS2["fasting_plasma_glucose_borderline_high"], fpg_borderline_flag)
+        if hba1c_flag:
+            _track(partial_triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
+        elif hba1c_borderline_flag:
+            _track_range(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_low"], THRESHOLDS2["hba1c_borderline_high"], hba1c_borderline_flag)
+        # _track(partial_triggered, "eag", eag, THRESHOLDS["eag_high"], ">=", eag_flag)
+        if insulin_flag:
+            _track(partial_triggered, "fasting_insulin", fasting_insulin, THRESHOLDS["fasting_insulin_high"], ">", insulin_flag)
+        elif insulin_borderline_flag:
+            _track(partial_triggered, "fasting_insulin", fasting_insulin, THRESHOLDS2["fasting_insulin_borderline_high"], ">", insulin_borderline_flag)
+
+    return [{
+        "Condition": "Type 2 Diabetes",
+        "Category": category,
+        "Values": _fmt_values(fasting_glucose=fpg, hba1c=hba1c, fasting_insulin=fasting_insulin),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_type2_diabetes_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_type2_diabetes',
+        'description': 'Evaluate Type 2 Diabetes susceptibility from fasting glucose, hba1c and fasting insulin. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'fasting_glucose': {
+                    'type': ['number', 'null'],
+                    'description': 'fasting_glucose, mg/dL. Null if not tested.',
+                },
+                'hba1c': {
+                    'type': ['number', 'null'],
+                    'description': 'hba1c, %. Null if not tested.',
+                },
+                'fasting_insulin': {
+                    'type': ['number', 'null'],
+                    'description': 'fasting_insulin, uIU/mL. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Type 2 Diabetes', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Type 2 Diabetes', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Type 2 Diabetes', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['fasting_glucose', 'hba1c', 'fasting_insulin', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_maturity_onset_diabetes_of_the_young(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    fpg = labs.get("fasting_glucose")
+    hba1c = labs.get("hba1c")
+    age = get_age(patient)
+
+    if fpg is None or hba1c is None:
+        return [{"Condition": "Maturity-Onset Diabetes of the Young", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    fpg_flag = is_elevated(fpg, THRESHOLDS["fasting_plasma_glucose_high"])
+    hba1c_flag = is_elevated(hba1c, THRESHOLDS["hba1c_high"])
+    age_flag = is_below(age, THRESHOLDS["age_low"])
+
+    fpg_borderline_flag = is_elevated(fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_high_MODY"])
+    hba1c_borderline_flag = is_elevated(hba1c, THRESHOLDS2["hba1c_borderline_MODY"])
+
+    # 4. Decide category
+    # Note: definitive diagnosis requires genetic testing; this is a lab-pattern flag only.
+    triggered = []
+    partial_triggered = []
+    if age_flag and fpg_flag and hba1c_flag or (age_flag and fpg_flag and hba1c_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "age", age, THRESHOLDS["age_low"], "<", age_flag)
+        _track(triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
+        _track(triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
+        
+    elif age_flag and fpg_borderline_flag and hba1c_borderline_flag or (age_flag and fpg_borderline_flag and hba1c_borderline_flag and (symptoms or family_history or past_history)):
+            category = "Early Pattern"
+            _track(triggered, "age", age, THRESHOLDS["age_low"], "<", age_flag)
+            _track(triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_high_MODY"], ">=", fpg_borderline_flag)
+            _track(triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_MODY"], ">=", hba1c_borderline_flag)
+    else:
+        category = "Typical"
+        if age_flag:
+            if fpg_flag:
+                _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS["fasting_plasma_glucose_high"], ">=", fpg_flag)
+            elif fpg_borderline_flag:
+                _track(partial_triggered, "fasting_glucose", fpg, THRESHOLDS2["fasting_plasma_glucose_borderline_high_MODY"], ">=", fpg_borderline_flag)
+            if hba1c_flag:
+                _track(partial_triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high"], ">=", hba1c_flag)
+            elif hba1c_borderline_flag:
+                _track(partial_triggered, "hba1c", hba1c, THRESHOLDS2["hba1c_borderline_MODY"], ">=", hba1c_borderline_flag)
+    
+    return [{
+        "Condition": "Maturity-Onset Diabetes of the Young",
+        "Category": category,
+        "Values": _fmt_values(fasting_glucose=fpg, hba1c=hba1c, age=age),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_maturity_onset_diabetes_of_the_young_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_maturity_onset_diabetes_of_the_young',
+        'description': 'Evaluate Maturity-Onset Diabetes of the Young (MODY) susceptibility from fasting glucose and hba1c. Age is a direct trigger (early-onset threshold), not just report metadata. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'fasting_glucose': {
+                    'type': ['number', 'null'],
+                    'description': 'fasting_glucose, mg/dL. Null if not tested.',
+                },
+                'hba1c': {
+                    'type': ['number', 'null'],
+                    'description': 'hba1c, %. Null if not tested.',
+                },
+                'age': {
+                    'type': 'integer',
+                    'description': "Patient's age in years.",
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Maturity-Onset Diabetes of the Young', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Maturity-Onset Diabetes of the Young', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Maturity-Onset Diabetes of the Young', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['fasting_glucose', 'hba1c', 'age', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_hypothyroidism(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    tsh = labs.get("tsh")
+    free_t4 = labs.get("free_t4")
+    tpoab = labs.get("tpoab")
+
+    if tsh is None or free_t4 is None or tpoab is None:
+        return [{"Condition": "Hypothyroidism", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    tsh_flag = is_above(tsh, THRESHOLDS["tsh_high_hypothyroid"])
+    t4_flag = is_below(free_t4, THRESHOLDS["free_t4_low_hypothyroid"])
+    tpoab_flag = is_elevated(tpoab,THRESHOLDS["TPOAB_UPPER_NORMAL"])
+    tsh_borderline_flag = in_range(
+        tsh, THRESHOLDS2["tsh_borderline_hypothyroid"][0],
+        THRESHOLDS2["tsh_borderline_hypothyroid"][1]
+    )
+    t4_normal_flag = in_range(
+        free_t4, THRESHOLDS2["free_t4_range"][0],
+        THRESHOLDS2["free_t4_range"][1]
+    )
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if tsh_flag and t4_flag and tpoab_flag or (tsh_flag and t4_flag and tpoab_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "tsh", tsh, THRESHOLDS["tsh_high_hypothyroid"], ">=", tsh_flag)
+        _track(triggered, "free_t4", free_t4, THRESHOLDS["free_t4_low_hypothyroid"], "<", t4_flag)
+        _track(triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag)
+    elif tsh_borderline_flag and t4_normal_flag and tpoab_flag or (tsh_borderline_flag and t4_normal_flag and tpoab_flag and (symptoms or family_history or past_history)):
+        category = "Early Pattern"
+        _track_range(triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hypothyroid"][0], THRESHOLDS2["tsh_borderline_hypothyroid"][1], tsh_borderline_flag)
+        _track_range(triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
+        _track(triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag)  
+    else:
+        category = "Typical"
+        if tsh_flag:
+            _track(partial_triggered, "tsh", tsh, THRESHOLDS["tsh_high_hypothyroid"], ">=", tsh_flag)
+        elif tsh_borderline_flag:
+            _track_range(partial_triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hypothyroid"][0], THRESHOLDS2["tsh_borderline_hypothyroid"][1], tsh_borderline_flag)
+        if t4_flag:
+            _track(partial_triggered, "free_t4", free_t4, THRESHOLDS["free_t4_low_hypothyroid"], "<", t4_flag)
+        # elif t4_normal_flag:
+        #     _track_range(partial_triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
+        _track(partial_triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag) 
+
+    return [{
+        "Condition": "Hypothyroidism",
+        "Category": category,
+        "Values": _fmt_values(tsh=tsh, free_t4=free_t4, tpoab=tpoab),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_hypothyroidism_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_hypothyroidism',
+        'description': 'Evaluate Hypothyroidism susceptibility from tsh, free_t4 and tpoab. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'tsh': {
+                    'type': ['number', 'null'],
+                    'description': 'tsh, uIU/L. Null if not tested.',
+                },
+                'free_t4': {
+                    'type': ['number', 'null'],
+                    'description': 'free_t4, ng/dL. Null if not tested.',
+                },
+                'tpoab': {
+                    'type': ['number', 'null'],
+                    'description': 'tpoab, IU/mL. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hypothyroidism', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hypothyroidism', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hypothyroidism', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['tsh', 'free_t4', 'tpoab', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_hyperthyroidism(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    tsh = labs.get("tsh")
+    free_t4 = labs.get("free_t4")
+    free_t3 = labs.get("free_t3")
+    tpoab = labs.get("tpoab")
+
+    if tsh is None or free_t4 is None or free_t3 is None or tpoab is None:
+        return [{"Condition": "Hyperthyroidism", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    tpoab_flag = is_elevated(tpoab,THRESHOLDS["TPOAB_UPPER_NORMAL"])
+    tsh_flag = is_below(tsh, THRESHOLDS["tsh_low_hyperthyroid"])
+    t4_flag = is_above(free_t4, THRESHOLDS["free_t4_high_hyperthyroid"])
+    t3_flag = is_above(free_t3, THRESHOLDS["free_t3_high_hyperthyroid"])
+
+    tsh_borderline_flag = in_range(
+        tsh, THRESHOLDS2["tsh_borderline_hyperthyroid"][0],
+        THRESHOLDS2["tsh_borderline_hyperthyroid"][1]
+    )
+    t4_normal_flag = in_range(
+        free_t4, THRESHOLDS2["free_t4_range"][0],
+        THRESHOLDS2["free_t4_range"][1]
+    )
+    t3_normal_flag = in_range(
+        free_t3, THRESHOLDS2["free_t3_range"][0],
+        THRESHOLDS2["free_t3_range"][1]
+    )
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if tsh_flag and t4_flag and t3_flag and tpoab_flag or (tsh_flag and t4_flag and t3_flag and tpoab_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "tsh", tsh, THRESHOLDS["tsh_low_hyperthyroid"], "<", tsh_flag)
+        _track(triggered, "free_t4", free_t4, THRESHOLDS["free_t4_high_hyperthyroid"], ">", t4_flag)
+        _track(triggered, "free_t3", free_t3, THRESHOLDS["free_t3_high_hyperthyroid"], ">", t3_flag)
+        _track(triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag)    
+    elif tsh_borderline_flag and t4_normal_flag and t3_normal_flag and tpoab_flag or (tsh_borderline_flag and t4_normal_flag and t3_normal_flag and tpoab_flag and (symptoms or family_history or past_history)):
+        category = "Early Pattern"  
+        _track_range(triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hyperthyroid"][0], THRESHOLDS2["tsh_borderline_hyperthyroid"][1], tsh_borderline_flag)
+        _track_range(triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
+        _track_range(triggered, "free_t3", free_t3, THRESHOLDS2["free_t3_range"][0], THRESHOLDS2["free_t3_range"][1], t3_normal_flag)
+        _track(triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag)   
+    else:
+        category = "Typical"
+        if tsh_flag:
+            _track(partial_triggered, "tsh", tsh, THRESHOLDS["tsh_low_hyperthyroid"], "<", tsh_flag)
+        elif tsh_borderline_flag:
+            _track_range(partial_triggered, "tsh", tsh, THRESHOLDS2["tsh_borderline_hyperthyroid"][0], THRESHOLDS2["tsh_borderline_hyperthyroid"][1], tsh_borderline_flag)
+        if t4_flag:
+            _track(partial_triggered, "free_t4", free_t4, THRESHOLDS["free_t4_high_hyperthyroid"], ">", t4_flag)
+        # elif t4_normal_flag:
+        #     _track_range(partial_triggered, "free_t4", free_t4, THRESHOLDS2["free_t4_range"][0], THRESHOLDS2["free_t4_range"][1], t4_normal_flag)
+        if t3_flag:
+            _track(partial_triggered, "free_t3", free_t3, THRESHOLDS["free_t3_high_hyperthyroid"], ">", t3_flag)
+        # elif t3_normal_flag:
+        #     _track_range(partial_triggered, "free_t3", free_t3, THRESHOLDS2["free_t3_range"][0], THRESHOLDS2["free_t3_range"][1], t3_normal_flag)
+        _track(partial_triggered, "tpoab", tpoab, THRESHOLDS["TPOAB_UPPER_NORMAL"], ">=", tpoab_flag)
+        
+    return [{
+        "Condition": "Hyperthyroidism",
+        "Category": category,
+        "Values": _fmt_values(tsh=tsh, free_t4=free_t4, free_t3=free_t3, tpoab=tpoab),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_hyperthyroidism_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_hyperthyroidism',
+        'description': 'Evaluate Hyperthyroidism susceptibility from tsh, free_t4, free_t3 and tpoab. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'tsh': {
+                    'type': ['number', 'null'],
+                    'description': 'tsh, uIU/mL. Null if not tested.',
+                },
+                'free_t4': {
+                    'type': ['number', 'null'],
+                    'description': 'free_t4, ng/dL. Null if not tested.',
+                },
+                'free_t3': {
+                    'type': ['number', 'null'],
+                    'description': 'free_t3, pg/mL. Null if not tested.',
+                },
+                'tpoab': {
+                    'type': ['number', 'null'],
+                    'description': 'tpoab, IU/mL. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hyperthyroidism', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hyperthyroidism', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hyperthyroidism', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['tsh', 'free_t4', 'free_t3', 'tpoab', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_coronary_artery_disease(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    ldl_c = labs.get("ldl_c")
+    crp = labs.get("crp")
+    lpa = labs.get("lpa")
+    # hba1c = labs.get("hba1c")
+
+    if (ldl_c is None or crp is None) and lpa is None:
+        return [{"Condition": "Coronary Artery Disease", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    ldl_flag = is_elevated(ldl_c, THRESHOLDS["ldl_high"])
+    crp_flag = is_elevated(crp, THRESHOLDS["crp_high_cardiac"])
+    lpa_flag = is_elevated(lpa, THRESHOLDS["lpa_high"])
+
+    lpa_borderline_flag = is_elevated(lpa, THRESHOLDS2["lpa_borderline_high"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if ldl_flag and crp_flag or (ldl_flag and crp_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "ldl_c", ldl_c, THRESHOLDS["ldl_high"], ">=", ldl_flag)
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_cardiac"], ">=", crp_flag)
+        _track(triggered, "lpa", lpa, THRESHOLDS["lpa_high"], ">=", lpa_flag)
+    elif lpa_borderline_flag:
+        category = "Elevated susceptibility"
+        _track(triggered, "lpa", lpa, THRESHOLDS2["lpa_borderline_high"], ">=", lpa_borderline_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "ldl_c", ldl_c, THRESHOLDS["ldl_high"], ">=", ldl_flag)
+        _track(partial_triggered, "crp", crp, THRESHOLDS["crp_high_cardiac"], ">=", crp_flag)
+        if lpa_flag:
+            _track(partial_triggered, "lpa", lpa, THRESHOLDS["lpa_high"], ">=", lpa_flag)
+        elif lpa_borderline_flag:
+            _track(partial_triggered, "lpa", lpa, THRESHOLDS2["lpa_borderline_high"], ">=", lpa_borderline_flag)
+
+    return [{
+        "Condition": "Coronary Artery Disease",
+        "Category": category,
+        "Values": _fmt_values(ldl_c=ldl_c, crp=crp, lpa=lpa),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_coronary_artery_disease_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_coronary_artery_disease',
+        'description': 'Evaluate Coronary Artery Disease susceptibility from ldl_c, crp and lpa. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ldl_c': {
+                    'type': ['number', 'null'],
+                    'description': 'ldl_c, mg/dL. Null if not tested.',
+                },
+                'crp': {
+                    'type': ['number', 'null'],
+                    'description': 'crp, mg/L. Null if not tested.',
+                },
+                'lpa': {
+                    'type': ['number', 'null'],
+                    'description': 'lpa, mg/dL. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Coronary Artery Disease', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Coronary Artery Disease', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Coronary Artery Disease', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['ldl_c', 'crp', 'lpa', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_asthma(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
+    neutrophils = labs.get("neutrophils")
+    crp = labs.get("crp")
+
+    if eosinophils is None or ige is None or neutrophils is None or crp is None:
+        return [{
+            "Condition": "Asthma",
+            "Category": INSUFFICIENT_DATA,
+            "Values": "",
+            "TriggeredValues": "",
+            "PartialTriggered": "",
+        }]
+
+    # 3. Check if values are abnormal
+    eos_flag = is_elevated(eosinophils, THRESHOLDS["eosinophils_high_resp"])
+    ige_flag = is_above(ige, THRESHOLDS["ige_high_resp"])
+    neutrophils_flag = is_elevated(neutrophils, THRESHOLDS["neutrophils_high"])
+    crp_flag = is_above(crp, THRESHOLDS["crp_high_resp"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if eos_flag and ige_flag and neutrophils_flag and crp_flag and (symptoms or family_history or past_history):
+        category = "Early Pattern"
+        _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+        _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+        _track(triggered, "neutrophils", neutrophils, THRESHOLDS["neutrophils_high"], ">=", neutrophils_flag)
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_resp"], ">", crp_flag)
+    elif eos_flag and ige_flag and neutrophils_flag and crp_flag :
+        category = "Elevated susceptibility"
+        _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+        _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+        _track(triggered, "neutrophils", neutrophils, THRESHOLDS["neutrophils_high"], ">=", neutrophils_flag)
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_resp"], ">", crp_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+        _track(partial_triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+        _track(partial_triggered, "neutrophils", neutrophils, THRESHOLDS["neutrophils_high"], ">=", neutrophils_flag)
+        _track(partial_triggered, "crp", crp, THRESHOLDS["crp_high_resp"], ">", crp_flag)
+
+    return [{
+        "Condition": "Asthma",
+        "Category": category,
+        "Values": _fmt_values(eosinophils=eosinophils, ige=ige, neutrophils=neutrophils, crp=crp),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_asthma_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_asthma',
+        'description': 'Evaluate Asthma susceptibility from eosinophils, ige, neutrophils and crp. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'eosinophils': {
+                    'type': ['number', 'null'],
+                    'description': 'eosinophils, x10^9/L. Null if not tested.',
+                },
+                'ige': {
+                    'type': ['number', 'null'],
+                    'description': 'ige, IU/mL. Null if not tested.',
+                },
+                'neutrophils': {
+                    'type': ['number', 'null'],
+                    'description': 'neutrophils, x10^9/L. Null if not tested.',
+                },
+                'crp': {
+                    'type': ['number', 'null'],
+                    'description': 'crp, mg/L. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Asthma', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Asthma', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Asthma', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['eosinophils', 'ige', 'neutrophils', 'crp', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_allergic_rhinitis(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
+
+    if eosinophils is None or ige is None:
+        return [{"Condition": "Rhinitis", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    eos_flag = in_range(eosinophils, THRESHOLDS["eosinophils_high_resp"] , THRESHOLDS["eosinophils_high_rhinitis"])
+    ige_flag = is_above(ige, THRESHOLDS["ige_high_resp"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if eos_flag and ige_flag and (symptoms or family_history or past_history):
+            category = "Early Pattern"
+            _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+            _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+    elif eos_flag and ige_flag:
+            category = "Elevated susceptibility"
+            _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+            _track(triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_resp"], ">=", eos_flag)
+        _track(partial_triggered, "ige", ige, THRESHOLDS["ige_high_resp"], ">", ige_flag)
+        
+    return [{
+        "Condition": "Rhinitis",
+        "Category": category,
+        "Values": _fmt_values(eosinophils=eosinophils, ige=ige),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_allergic_rhinitis_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_allergic_rhinitis',
+        'description': 'Evaluate Rhinitis susceptibility from eosinophil count and ige. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'eosinophils': {
+                    'type': ['number', 'null'],
+                    'description': 'eosinophils, x10^9/L. Null if not tested.',
+                },
+                'ige': {
+                    'type': ['number', 'null'],
+                    'description': 'ige, IU/mL. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Rhinitis', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Rhinitis', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Rhinitis', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['eosinophils', 'ige', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_nafld(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    alt = labs.get("alt")
+    ast = labs.get("ast")
+    ggt = labs.get("ggt")
+    triglycerides = labs.get("triglycerides")
+    hba1c = labs.get("hba1c")
+    hdl_c = labs.get("hdl_c")
+    # platelets = labs.get("platelets")
+    non_hdl_c = labs.get("non_hdl_c")
+    fib4 = labs.get("fib4")
+    age = get_age(patient)
+    ast_alt_ratio = labs.get("ast/alt")
+
+    if any(v is None for v in (alt, ast, ggt, triglycerides, hba1c, hdl_c, non_hdl_c, fib4, ast_alt_ratio)):
+        return [{"Condition": "NAFLD", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    alt_threshold = THRESHOLDS["alt_high_men"] if is_male(patient) else THRESHOLDS["alt_high_women"]
+    alt_flag = is_above(alt, alt_threshold)
+
+    # ast_alt_ratio = None
+    # if _to_float(ast) is not None and _to_float(alt) not in (None, 0):
+    #     ast_alt_ratio = _to_float(ast) / _to_float(alt)
+    ast_alt_ratio_flag = is_above(ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"])
+
+    ggt_flag = is_above(ggt, THRESHOLDS["ggt_high"])
+    tg_flag = is_elevated(triglycerides, THRESHOLDS["triglycerides_high"])
+    hba1c_flag = is_elevated(hba1c, THRESHOLDS["hba1c_high_nafld"])
+
+    hdl_threshold = THRESHOLDS["hdl_low_men"] if is_male(patient) else THRESHOLDS["hdl_low_women"]
+    hdl_c_flag = is_below(hdl_c, hdl_threshold)
+
+    non_hdl_c_flag = is_above(non_hdl_c, THRESHOLDS["non_hdl_high"])
+
+     # FIB-4 score: >= 1.30 (age 35-65), or >= 2.0 if age >= 65
+    # fib4 = fib4_score(age, ast, platelets, alt)
+    fib4_threshold = THRESHOLDS2["fib4_high_65_plus"] if (age is not None and age >= 65) else THRESHOLDS2["fib4_high_35_65"]
+    # fib4_flag = fib4 is not None and fib4 >= fib4_threshold
+    fib4_flag = is_elevated(fib4, fib4_threshold)
+    fib4_high = is_elevated(fib4,THRESHOLDS["FIB4_ELEVATED"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if (alt_flag and ast_alt_ratio_flag and ggt_flag and tg_flag
+            and hba1c_flag and hdl_c_flag and non_hdl_c_flag and fib4_high) or ((alt_flag and ast_alt_ratio_flag and ggt_flag and tg_flag
+            and hba1c_flag and hdl_c_flag and non_hdl_c_flag and fib4_high)and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "alt", alt, alt_threshold, ">", alt_flag)
+        _track(triggered, "ggt", ggt, THRESHOLDS["ggt_high"], ">", ggt_flag)
+        _track(triggered, "triglycerides", triglycerides, THRESHOLDS["triglycerides_high"], ">=", tg_flag)
+        _track(triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high_nafld"], ">=", hba1c_flag)
+        _track(triggered, "hdl_c", hdl_c, hdl_threshold, "<=", hdl_c_flag)
+        _track(triggered, "non_hdl_c", non_hdl_c, THRESHOLDS["non_hdl_high"], ">", non_hdl_c_flag)
+        _track(triggered, "fib4", fib4, THRESHOLDS["FIB4_ELEVATED"], ">=", fib4_high)
+        _track(triggered, "ast/alt", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
+    elif (alt_flag and ast_alt_ratio_flag and fib4_flag and tg_flag and hdl_c_flag and hba1c_flag) or (alt_flag and ast_alt_ratio_flag and fib4_flag and tg_flag and hdl_c_flag and hba1c_flag and (symptoms or family_history or past_history)):
+        category = "Early Pattern"
+        _track(triggered, "alt", alt, alt_threshold, ">", alt_flag)
+        _track(triggered, "ast/alt", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
+        _track(triggered, "fib4", fib4, fib4_threshold, ">=", fib4_flag)
+        _track(triggered, "triglycerides", triglycerides, THRESHOLDS["triglycerides_high"], ">=", tg_flag)
+        _track(triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high_nafld"], ">=", hba1c_flag)
+        _track(triggered, "hdl_c", hdl_c, hdl_threshold, "<=", hdl_c_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "alt", alt, alt_threshold, ">", alt_flag)
+        _track(partial_triggered, "ggt", ggt, THRESHOLDS["ggt_high"], ">", ggt_flag)
+        _track(partial_triggered, "triglycerides", triglycerides, THRESHOLDS["triglycerides_high"], ">=", tg_flag)
+        _track(partial_triggered, "hba1c", hba1c, THRESHOLDS["hba1c_high_nafld"], ">=", hba1c_flag)
+        _track(partial_triggered, "hdl_c", hdl_c, hdl_threshold, "<=", hdl_c_flag)
+        _track(partial_triggered, "non_hdl_c", non_hdl_c, THRESHOLDS["non_hdl_high"], ">", non_hdl_c_flag)
+        _track(partial_triggered, "fib4", fib4, fib4_threshold, ">=", fib4_flag)
+        _track(partial_triggered, "fib4", fib4, THRESHOLDS["FIB4_ELEVATED"], ">=", fib4_high)
+        _track(partial_triggered, "ast/alt", ast_alt_ratio, THRESHOLDS["ast_alt_ratio_low"], ">", ast_alt_ratio_flag)
+
+    return [{
+        "Condition": "NAFLD",
+        "Category": category,
+        "Values": _fmt_values(alt=alt, ast=ast, ast_alt_ratio=ast_alt_ratio, ggt=ggt, triglycerides=triglycerides, hba1c=hba1c, hdl_c=hdl_c, non_hdl_c=non_hdl_c, fib4=fib4),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_nafld_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_nafld',
+        'description': 'Evaluate NAFLD susceptibility from liver enzymes, lipid panel, hba1c and fib4. Age affects which fib4 threshold tier applies; sex affects the alt and hdl thresholds used. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'alt': {
+                    'type': ['number', 'null'],
+                    'description': 'alt, U/L. Null if not tested.',
+                },
+                'ast': {
+                    'type': ['number', 'null'],
+                    'description': 'ast, U/L. Null if not tested.',
+                },
+                'ggt': {
+                    'type': ['number', 'null'],
+                    'description': 'ggt, U/L. Null if not tested.',
+                },
+                'triglycerides': {
+                    'type': ['number', 'null'],
+                    'description': 'triglycerides, mg/dL. Null if not tested.',
+                },
+                'hba1c': {
+                    'type': ['number', 'null'],
+                    'description': 'hba1c, %. Null if not tested.',
+                },
+                'hdl_c': {
+                    'type': ['number', 'null'],
+                    'description': 'hdl_c, mg/dL. Null if not tested.',
+                },
+                'non_hdl_c': {
+                    'type': ['number', 'null'],
+                    'description': 'non_hdl_c, mg/dL. Null if not tested.',
+                },
+                'fib4': {
+                    'type': ['number', 'null'],
+                    'description': 'fib4, score. Null if not tested.',
+                },
+                'ast_alt_ratio': {
+                    'type': ['number', 'null'],
+                    'description': "ast/alt ratio. Null if not tested. NOTE: the labs dict key this function reads is the literal string \"ast/alt\" (not \"ast_alt_ratio\").",
+                },
+                'age': {
+                    'type': 'integer',
+                    'description': "Patient's age in years.",
+                },
+                'sex': {
+                    'type': 'string',
+                    'enum': ['male', 'female'],
+                    'description': "Patient's biological sex.",
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('NAFLD', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('NAFLD', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('NAFLD', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['alt', 'ast', 'ggt', 'triglycerides', 'hba1c', 'hdl_c', 'non_hdl_c', 'fib4', 'ast_alt_ratio', 'age', 'sex', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_inflammatory_bowel_disease(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    crp = labs.get("crp")
+    esr = labs.get("esr")
+    platelets = labs.get("platelets")
+    hemoglobin = labs.get("hemoglobin")
+    albumin = labs.get("albumin")
+    wbc = labs.get("wbc")
+    mcv = labs.get("mcv")
+    rdw = labs.get("rdw")
+    Globulin = labs.get("Globulin")
+    nlr = labs.get("nlr")
+    plr = labs.get("plr")
+    lmr = labs.get("lmr")
+
+    if any(v is None for v in (crp, esr, platelets, hemoglobin, albumin, wbc, mcv, rdw, Globulin, nlr, plr, lmr)):
+        return [{"Condition": "Inflammatory Bowel Disease", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    crp_flag = is_above(crp, THRESHOLDS["crp_high_ibd"])
+    esr_flag = is_above(esr, THRESHOLDS["esr_high_ibd"])
+    platelets_flag = is_above(platelets, THRESHOLDS["platelets_high_ibd"])
+    hemoglobin_threshold = THRESHOLDS["hemoglobin_low_men"] if is_male(patient) else THRESHOLDS["hemoglobin_low_women"]
+    hemoglobin_flag = is_below(hemoglobin, hemoglobin_threshold)
+    albumin_flag = is_below(albumin, THRESHOLDS["albumin_low"])
+    wbc_flag = is_above(wbc, THRESHOLDS["wbc_high"])
+    mcv_flag = is_below(mcv, THRESHOLDS["mcv_low"])
+    rdw_flag = is_above(rdw, THRESHOLDS["rdw_high"])
+    mcv_rdw_abnormal_flag = mcv_flag and rdw_flag
+    Globulin_flag = is_above(Globulin, THRESHOLDS["globulin_high"])
+    nlr_flag = is_above(nlr, THRESHOLDS["nlr_high"])
+    plr_flag = is_above(plr, THRESHOLDS["plr_high"])
+    lmr_flag = is_above(lmr, THRESHOLDS["lmr_high"])
+    nlr_plr_lmr_flag = nlr_flag and plr_flag and lmr_flag
+
+    crp_borderline_flag = in_range(crp, THRESHOLDS2["crp_borderline_low"], THRESHOLDS2["crp_borderline_high"])
+    esr_borderline_flag = is_above(esr, THRESHOLDS2["esr_borderline"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if (crp_flag and esr_flag and platelets_flag
+            and hemoglobin_flag and nlr_plr_lmr_flag and albumin_flag and Globulin_flag
+            and wbc_flag and mcv_rdw_abnormal_flag) or (crp_flag and esr_flag and platelets_flag
+            and hemoglobin_flag and nlr_plr_lmr_flag and albumin_flag and Globulin_flag
+            and wbc_flag and mcv_rdw_abnormal_flag) and (symptoms or family_history or past_history):
+        category = "Significant Pattern"
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_ibd"], ">", crp_flag)
+        _track(triggered, "esr", esr, THRESHOLDS["esr_high_ibd"], ">", esr_flag)
+        _track(triggered, "platelets", platelets, THRESHOLDS["platelets_high_ibd"], ">", platelets_flag)
+        _track(triggered, "hemoglobin", hemoglobin, hemoglobin_threshold, "<", hemoglobin_flag)
+        _track(triggered, "albumin", albumin, THRESHOLDS["albumin_low"], "<", albumin_flag)
+        _track(triggered, "wbc", wbc, THRESHOLDS["wbc_high"], ">", wbc_flag)
+        _track(triggered, "mcv", mcv, THRESHOLDS["mcv_low"], "<", mcv_flag)
+        _track(triggered, "rdw", rdw, THRESHOLDS["rdw_high"], ">", rdw_flag)
+        _track(triggered, "nlr", nlr, THRESHOLDS["nlr_high"], ">", nlr_flag)
+        _track(triggered, "plr", plr, THRESHOLDS["plr_high"], ">", plr_flag)
+        _track(triggered, "lmr", lmr, THRESHOLDS["lmr_high"], ">", lmr_flag)
+        _track(triggered, "Globulin", Globulin, THRESHOLDS["globulin_high"], ">", Globulin_flag)
+        
+    elif (crp_borderline_flag and esr_borderline_flag and platelets_flag
+                and hemoglobin_flag and albumin_flag and wbc_flag and mcv_rdw_abnormal_flag) or (crp_borderline_flag and esr_borderline_flag and platelets_flag
+            and hemoglobin_flag and albumin_flag and wbc_flag and mcv_rdw_abnormal_flag and (symptoms or family_history or past_history)):
+        category = "Early Pattern"
+        _track_range(triggered, "crp", crp, THRESHOLDS2["crp_borderline_low"], THRESHOLDS2["crp_borderline_high"], crp_borderline_flag)
+        _track(triggered, "esr", esr, THRESHOLDS2["esr_borderline"], ">", esr_borderline_flag)
+        _track(triggered, "platelets", platelets, THRESHOLDS["platelets_high_ibd"], ">", platelets_flag)
+        _track(triggered, "hemoglobin", hemoglobin, hemoglobin_threshold, "<", hemoglobin_flag)
+        _track(triggered, "albumin", albumin, THRESHOLDS["albumin_low"], "<", albumin_flag)
+        _track(triggered, "wbc", wbc, THRESHOLDS["wbc_high"], ">", wbc_flag)
+        _track(triggered, "mcv", mcv, THRESHOLDS["mcv_low"], "<", mcv_flag)
+        _track(triggered, "rdw", rdw, THRESHOLDS["rdw_high"], ">", rdw_flag)   
+    else:
+        category = "Typical"
+        if crp_flag:
+            _track(partial_triggered, "crp", crp, THRESHOLDS["crp_high_ibd"], ">", crp_flag)
+        elif crp_borderline_flag:
+            _track_range(partial_triggered, "crp", crp, THRESHOLDS2["crp_borderline_low"], THRESHOLDS2["crp_borderline_high"], crp_borderline_flag)
+        if esr_flag:
+            _track(partial_triggered, "esr", esr, THRESHOLDS["esr_high_ibd"], ">", esr_flag)
+        elif esr_borderline_flag:
+            _track(partial_triggered, "esr", esr, THRESHOLDS2["esr_borderline"], ">", esr_borderline_flag)
+        _track(partial_triggered, "platelets", platelets, THRESHOLDS["platelets_high_ibd"], ">", platelets_flag)
+        _track(partial_triggered, "hemoglobin", hemoglobin, hemoglobin_threshold, "<", hemoglobin_flag)
+        _track(partial_triggered, "albumin", albumin, THRESHOLDS["albumin_low"], "<", albumin_flag)
+        _track(partial_triggered, "wbc", wbc, THRESHOLDS["wbc_high"], ">", wbc_flag)
+        _track(partial_triggered, "mcv", mcv, THRESHOLDS["mcv_low"], "<", mcv_flag)
+        _track(partial_triggered, "rdw", rdw, THRESHOLDS["rdw_high"], ">", rdw_flag)
+        _track(partial_triggered, "nlr", nlr, THRESHOLDS["nlr_high"], ">", nlr_flag)
+        _track(partial_triggered, "plr", plr, THRESHOLDS["plr_high"], ">", plr_flag)
+        _track(partial_triggered, "lmr", lmr, THRESHOLDS["lmr_high"], ">", lmr_flag)
+        _track(partial_triggered, "Globulin", Globulin, THRESHOLDS["globulin_high"], ">", Globulin_flag)
+ 
+    return [{
+        "Condition": "Inflammatory Bowel Disease",
+        "Category": category,
+        "Values": _fmt_values(crp=crp, esr=esr, platelets=platelets, hemoglobin=hemoglobin, albumin=albumin, wbc=wbc, mcv=mcv, rdw=rdw, nlr=nlr, plr=plr, lmr=lmr, globulin=Globulin),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_inflammatory_bowel_disease_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_inflammatory_bowel_disease',
+        'description': 'Evaluate Inflammatory Bowel Disease susceptibility from crp, esr, platelets, hemoglobin, albumin, wbc, mcv, rdw, globulin and the nlr, plr, lmr ratios. Sex affects the hemoglobin threshold used. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'crp': {
+                    'type': ['number', 'null'],
+                    'description': 'crp, mg/L. Null if not tested.',
+                },
+                'esr': {
+                    'type': ['number', 'null'],
+                    'description': 'esr, mm/hr. Null if not tested.',
+                },
+                'platelets': {
+                    'type': ['number', 'null'],
+                    'description': 'platelets, x10^3/uL. Null if not tested.',
+                },
+                'hemoglobin': {
+                    'type': ['number', 'null'],
+                    'description': 'hemoglobin, g/dL. Null if not tested.',
+                },
+                'albumin': {
+                    'type': ['number', 'null'],
+                    'description': 'albumin, g/dL. Null if not tested.',
+                },
+                'wbc': {
+                    'type': ['number', 'null'],
+                    'description': 'wbc, cells/cu.mm. Null if not tested.',
+                },
+                'mcv': {
+                    'type': ['number', 'null'],
+                    'description': 'mcv, fL. Null if not tested.',
+                },
+                'rdw': {
+                    'type': ['number', 'null'],
+                    'description': 'rdw, %. Null if not tested.',
+                },
+                'globulin': {
+                    'type': ['number', 'null'],
+                    'description': 'globulin, g/dL. Null if not tested.',
+                },
+                'nlr': {
+                    'type': ['number', 'null'],
+                    'description': 'nlr, ratio. Null if not tested.',
+                },
+                'plr': {
+                    'type': ['number', 'null'],
+                    'description': 'platelet/lymphocyte ratio. Null if not tested. NOTE: the labs dict key this function reads is the literal string "platelet/lymphocyte_ratio" (not "plr") - whatever assembles labs from this schema\'s args must map this parameter to that key.',
+                },
+                'lmr': {
+                    'type': ['number', 'null'],
+                    'description': 'lymphocyte/monocyte ratio. Null if not tested. NOTE: the labs dict key this function reads is the literal string "lymphocyte/monocyte_ratio" (not "lmr") - whatever assembles labs from this schema\'s args must map this parameter to that key.',
+                },
+                'sex': {
+                    'type': 'string',
+                    'enum': ['male', 'female'],
+                    'description': "Patient's biological sex.",
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Inflammatory Bowel Disease', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Inflammatory Bowel Disease', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Inflammatory Bowel Disease', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['crp', 'esr', 'platelets', 'hemoglobin', 'albumin', 'wbc', 'mcv', 'rdw', 'globulin', 'nlr', 'plr', 'lmr', 'sex', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_hereditary_hemochromatosis(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    tsat = labs.get("transferrin_saturation")
+    ferritin = labs.get("ferritin")
+
+    if tsat is None or ferritin is None:
+        return [{"Condition": "Hereditary Hemochromatosis", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    tsat_threshold = THRESHOLDS["tsat_high_men"] if is_male(patient) else THRESHOLDS["tsat_high_women"]
+    tsat_flag = is_above(tsat, tsat_threshold)
+
+    ferritin_threshold = THRESHOLDS["ferritin_high_men"] if is_male(patient) else THRESHOLDS["ferritin_high_premeno_women"]
+    ferritin_flag = is_above(ferritin, ferritin_threshold)
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if tsat_flag and ferritin_flag or (tsat_flag and ferritin_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "transferrin_saturation", tsat, tsat_threshold, ">", tsat_flag)
+        _track(triggered, "ferritin", ferritin, ferritin_threshold, ">", ferritin_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "transferrin_saturation", tsat, tsat_threshold, ">", tsat_flag)
+        _track(partial_triggered, "ferritin", ferritin, ferritin_threshold, ">", ferritin_flag)
+
+    return [{
+        "Condition": "Hereditary Hemochromatosis",
+        "Category": category,
+        "Values": _fmt_values(transferrin_saturation=tsat, ferritin=ferritin),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_hereditary_hemochromatosis_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_hereditary_hemochromatosis',
+        'description': 'Evaluate Hereditary Hemochromatosis susceptibility from transferrin saturation and ferritin. Sex affects both thresholds used. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'transferrin_saturation': {
+                    'type': ['number', 'null'],
+                    'description': 'transferrin_saturation, %. Null if not tested.',
+                },
+                'ferritin': {
+                    'type': ['number', 'null'],
+                    'description': 'ferritin, ng/mL. Null if not tested.',
+                },
+                'sex': {
+                    'type': 'string',
+                    'enum': ['male', 'female'],
+                    'description': "Patient's biological sex.",
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hereditary Hemochromatosis', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hereditary Hemochromatosis', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Hereditary Hemochromatosis', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['transferrin_saturation', 'ferritin', 'sex', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_eczema(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
+    crp = labs.get("crp")
+    esr = labs.get("esr")
+
+    if eosinophils is None or ige is None or crp is None or esr is None:
+        return [{"Condition": "Eczema", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    eos_flag = is_elevated(eosinophils, THRESHOLDS["eosinophils_high_eczema"])
+    ige_flag = is_above(ige, THRESHOLDS["ige_high_eczema"])
+    crp_flag = is_above(crp, THRESHOLDS["crp_high_skin"])
+    esr_flag = is_above(esr, THRESHOLDS["esr_high_eczema"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if eos_flag and ige_flag and crp_flag and esr_flag or (eos_flag and ige_flag and crp_flag and esr_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
+        _track(triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
+        _track(triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
+        _track(partial_triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
+        _track(partial_triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
+        _track(partial_triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
+               
+    return [{
+        "Condition": "Eczema",
+        "Category": category,
+        "Values": _fmt_values(eosinophils=eosinophils, ige=ige, crp=crp, esr=esr),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_eczema_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_eczema',
+        'description': 'Evaluate Eczema susceptibility from eosinophil count, ige, crp and esr. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'eosinophils': {
+                    'type': ['number', 'null'],
+                    'description': 'eosinophils, x10^9/L. Null if not tested.',
+                },
+                'ige': {
+                    'type': ['number', 'null'],
+                    'description': 'ige, IU/mL. Null if not tested.',
+                },
+                'crp': {
+                    'type': ['number', 'null'],
+                    'description': 'crp, mg/L. Null if not tested.',
+                },
+                'esr': {
+                    'type': ['number', 'null'],
+                    'description': 'esr, mm/hr. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Eczema', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Eczema', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Eczema', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['eosinophils', 'ige', 'crp', 'esr', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_atopic_dermatitis(labs, patient, symptoms, family_history, past_history):
+# 2. Pull values from labs / patient
+    eosinophils = labs.get("eosinophils")
+    ige = labs.get("ige")
+    crp = labs.get("crp")
+    esr = labs.get("esr")
+
+    if eosinophils is None or ige is None or crp is None or esr is None:
+        return [{"Condition": "Atopic Dermatitis", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    eos_flag = is_elevated(eosinophils, THRESHOLDS["eosinophils_high_eczema"])
+    ige_flag = is_above(ige, THRESHOLDS["ige_high_eczema"])
+    crp_flag = is_above(crp, THRESHOLDS["crp_high_skin"])
+    esr_flag = is_above(esr, THRESHOLDS["esr_high_eczema"])
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if eos_flag and ige_flag and crp_flag and esr_flag or (eos_flag and ige_flag and crp_flag and esr_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
+        _track(triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
+        _track(triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
+        _track(triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
+    else:
+        category = "Typical"
+        _track(partial_triggered, "eosinophils", eosinophils, THRESHOLDS["eosinophils_high_eczema"], ">=", eos_flag)
+        _track(partial_triggered, "ige", ige, THRESHOLDS["ige_high_eczema"], ">", ige_flag)
+        _track(partial_triggered, "crp", crp, THRESHOLDS["crp_high_skin"], ">", crp_flag)
+        _track(partial_triggered, "esr", esr, THRESHOLDS["esr_high_eczema"], ">", esr_flag)
+        
+    return [{
+        "Condition": "Atopic Dermatitis",
+        "Category": category,
+        "Values": _fmt_values(eosinophils=eosinophils, ige=ige, crp=crp, esr=esr),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_atopic_dermatitis_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_atopic_dermatitis',
+        'description': 'Evaluate Atopic Dermatitis susceptibility from eosinophil count, ige, crp and esr. Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'eosinophils': {
+                    'type': ['number', 'null'],
+                    'description': 'eosinophils, x10^9/L. Null if not tested.',
+                },
+                'ige': {
+                    'type': ['number', 'null'],
+                    'description': 'ige, IU/mL. Null if not tested.',
+                },
+                'crp': {
+                    'type': ['number', 'null'],
+                    'description': 'crp, mg/L. Null if not tested.',
+                },
+                'esr': {
+                    'type': ['number', 'null'],
+                    'description': 'esr, mm/hr. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Atopic Dermatitis', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Atopic Dermatitis', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Atopic Dermatitis', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['eosinophils', 'ige', 'crp', 'esr', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+def evaluate_prostate_risk(labs,patient, symptoms, family_history, past_history):
+    # Only evaluated for men aged 50+
+    age = get_age(patient)
+    if not (is_male(patient) and age is not None and age >= 50):
+        return []
+    
+    psa = labs.get("total_psa")
+    if psa is None:
+        return [{"Condition": "Prostate Cancer", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+      # 3. Check if values are abnormal
+    psa_threshold = THRESHOLDS2["PSA_Borderline"]
+    psa_flag = is_elevated(psa, psa_threshold)
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if psa_flag:
+        category = "Elevated susceptibility"
+        _track(triggered, "total_psa", psa, psa_threshold, ">=", psa_flag)
+    else:
+        category = "Typical"
+
+    return [{
+        "Condition": "Prostate Cancer",
+        "Category": category,
+        "Values": _fmt_values(total_psa=psa),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_prostate_risk_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_prostate_risk',
+        'description': 'Evaluate Prostate Cancer susceptibility from total_psa. Only evaluated for male patients aged 50+ (returns no result for anyone else). Blood-only - no genetics dependency.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'total_psa': {
+                    'type': ['number', 'null'],
+                    'description': 'total_psa, ng/mL. Null if not tested.',
+                },
+                'age': {
+                    'type': 'integer',
+                    'description': "Patient's age in years.",
+                },
+                'sex': {
+                    'type': 'string',
+                    'enum': ['male', 'female'],
+                    'description': "Patient's biological sex.",
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Prostate Cancer', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Prostate Cancer', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Prostate Cancer', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['total_psa', 'age', 'sex', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+def evaluate_Celiac_disease(labs, patient, symptoms, family_history, past_history):
+    # 2. Pull values from labs / patient
+    ttg = labs.get("ttg")
+    if ttg is None:
+        return [{"Condition": "Celiac Disease", "Category": INSUFFICIENT_DATA, "Values": "", "TriggeredValues": "", "PartialTriggered": ""}]
+
+    # 3. Check if values are abnormal
+    ttg_flag = is_above(ttg, THRESHOLDS["ttg_high"])
+
+    ttg_borderline_threshold = THRESHOLDS2["ttg_borderline_high"]
+    ttg_borderline_flag = is_elevated(ttg, ttg_borderline_threshold)
+
+    # 4. Decide category
+    triggered = []
+    partial_triggered = []
+    if ttg_flag or (ttg_flag and (symptoms or family_history or past_history)):
+        category = "Significant Pattern"
+        _track(triggered, "ttg", ttg, THRESHOLDS["ttg_high"], ">", ttg_flag)
+    elif ttg_borderline_flag or (ttg_borderline_flag and (symptoms or family_history or past_history)):
+        category = "Early Pattern"
+        _track(triggered, "ttg", ttg, ttg_borderline_threshold, ">=", ttg_borderline_flag)
+    else:
+        category = "Typical"
+        if ttg_flag:
+            _track(triggered, "ttg", ttg, THRESHOLDS["ttg_high"], ">", ttg_flag)
+        elif ttg_borderline_flag:
+           _track(triggered, "ttg", ttg, ttg_borderline_threshold, ">=", ttg_borderline_flag)
+
+    return [{
+        "Condition": "Celiac Disease",
+        "Category": category,
+        "Values": _fmt_values(ttg=ttg),
+        "TriggeredValues": ", ".join(triggered),
+        "PartialTriggered": ", ".join(partial_triggered)
+    }]
+evaluate_celiac_disease_schema = {
+    'type': 'function',
+    'function': {
+        'name': 'evaluate_celiac_disease',
+        'description': 'Evaluate Celiac Disease susceptibility from tissue transglutaminase IgA (ttg-iga) levels and clinical history.',
+        'parameters': {
+            'type': 'object',
+            'properties': {
+                'ttg': {
+                    'type': ['number', 'null'],
+                    'description': 'ttg, AU/mL. Null if not tested.',
+                },
+                'family_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Celiac Disease', {}).get('family_history', []),
+                    },
+                    'description': 'Which of these the patient reports in family history.',
+                },
+                'past_history': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Celiac Disease', {}).get('past_history', []),
+                    },
+                    'description': "Which of these are in the patient's own past medical history.",
+                },
+                'symptoms': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'string',
+                        'enum': USER_CONTEXT.get('Celiac Disease', {}).get('symptoms', []),
+                    },
+                    'description': 'Which of these symptoms the patient reports.',
+                },
+            },
+            'required': ['ttg', 'family_history', 'past_history', 'symptoms'],
+            'additionalProperties': False,
+        },
+        'strict': True,
+    },
+}
+
+# Apply with_enrichment to every live evaluate_* in one place - the single
+# choke point that guarantees Domain/Blood Marker(s)/All Blood Marker(s)/
+# Snapshot Category are always present on every evaluate_*'s own return
+# value, without touching any of the 13 functions' bodies above. Add a new
+# condition's function name here when it's enabled.
+for _evaluator_name in [
+    "evaluate_type2_diabetes", "evaluate_maturity_onset_diabetes_of_the_young", "evaluate_hypothyroidism",
+    "evaluate_hyperthyroidism", "evaluate_coronary_artery_disease", "evaluate_asthma",
+    "evaluate_allergic_rhinitis", "evaluate_nafld", "evaluate_inflammatory_bowel_disease",
+    "evaluate_hereditary_hemochromatosis", "evaluate_eczema", "evaluate_atopic_dermatitis",
+    "evaluate_prostate_risk","evaluate_Celiac_disease",
+]:
+    globals()[_evaluator_name] = with_enrichment(globals()[_evaluator_name])
+del _evaluator_name
+
+# ---------------------------------------------------------------------------
+# 4. Registry of all evaluators
+# ---------------------------------------------------------------------------
+
+# dead weight CLI approach
+# EVALUATORS = [
+#     evaluate_type2_diabetes,
+#     evaluate_hypothyroidism,
+#     evaluate_maturity_onset_diabetes_of_the_young,
+#     evaluate_hyperthyroidism,
+#     evaluate_coronary_artery_disease,
+#     evaluate_asthma,
+#     evaluate_allergic_rhinitis,
+#     evaluate_nafld,
+#     evaluate_inflammatory_bowel_disease,
+#     evaluate_hereditary_hemochromatosis,
+#     evaluate_eczema,
+#     evaluate_atopic_dermatitis,
+#     evaluate_prostate_risk
+# ]
+# 
+# def evaluate_all(labs: Dict[str, Any], patient: Dict[str, Any]) -> List[Dict[str, str]]:
+#     results = []
+#     for fn in EVALUATORS:
+#         results.extend(fn(labs, patient,family_history=False, past_history=False, symptoms=False,))
+#     return results
+# 
+# 
+# # ---------------------------------------------------------------------------
+# # 5. CSV I/O
+# # ---------------------------------------------------------------------------
+# 
+# PATIENT_COLUMNS = {"patient_id", "sex", "age"}
+# 
+# # Only these categories are written to the output. Anything else
+# # (i.e. "" / no pattern met) is filtered out of the report.
+# OUTPUT_FIELDNAMES = ["Domain", "Condition", "Category", "DNA Marker(s)", "Blood Marker(s)", "Triggering PRS", "Snapshot Category", "All Blood Marker(s)", "RSID_m", "Pathogenicity_m", "Elevation_p", "Threshold_p"]
+# VISIBLE_CATEGORIES = {"Significant Pattern", "Early Pattern", "Elevated susceptibility", "Typical", INSUFFICIENT_DATA}
+# # Columns that indicate a "long format" CSV (one row per lab parameter,
+# # rather than one column per lab). If both are present we pivot the
+# # rows into one wide record per patient before evaluating.
+# LONG_FORMAT_PARAM_COL_CANDIDATES = {"parameter", "test", "test_name", "lab", "lab_name"}
+# LONG_FORMAT_VALUE_COL_CANDIDATES = {"value", "result", "result_value", "lab_value"}
+# 
+# 
+# def _normalize_key(name: str) -> str:
+#     return str(name).strip().lower().replace(" ", "_")
+# 
+# 
+# def _load_rows(input_path: str) -> List[Dict[str, str]]:
+#     with open(input_path, newline="", encoding="utf-8-sig") as f_in:
+#         reader = csv.DictReader(f_in)
+#         return [
+#             {_normalize_key(k): (v.strip() if isinstance(v, str) else v) for k, v in raw_row.items()}
+#             for raw_row in reader
+#         ]
+# 
+# 
+# def _pivot_long_format(rows: List[Dict[str, str]], param_col: str, value_col: str) -> List[Dict[str, Any]]:
+#     """
+#     Turn long-format rows (one row per parameter/value pair) into one
+#     wide record per patient. If there's no patient_id column, every row
+#     is assumed to belong to a single patient (id left blank).
+#     """
+#     patients: Dict[str, Dict[str, Any]] = {}
+#     order: List[str] = []
+# 
+#     for row in rows:
+#         pid = row.get("patient_id", "") or ""
+#         if pid not in patients:
+#             patients[pid] = {"patient_id": pid}
+#             order.append(pid)
+#             for pc in PATIENT_COLUMNS:
+#                 if pc in row and row.get(pc):
+#                     patients[pid][pc] = row[pc]
+# 
+#         param = row.get(param_col)
+#         value = row.get(value_col)
+#         if not param:
+#             continue
+#         key = _normalize_key(param)
+#         patients[pid][key] = value
+# 
+#         # If the "parameter" row itself is sex/age (common in long-format
+#         # exports), also promote it into the patient-level fields so
+#         # is_male()/is_female()/get_age() can see it.
+#         if key in PATIENT_COLUMNS:
+#             patients[pid][key] = value
+# 
+#         # carry forward patient-level columns (sex/age) whenever present
+#         # as their own CSV columns
+#         for pc in PATIENT_COLUMNS:
+#             if pc in row and row.get(pc):
+#                 patients[pid][pc] = row[pc]
+# 
+#     return [patients[pid] for pid in order]
+# 
+# 
+# def process_csv(input_path: str, output_path: str) -> None:
+#     rows = _load_rows(input_path)
+#     if not rows:
+#         print("No rows found in input CSV.")
+#         with open(output_path, "w", newline="", encoding="utf-8") as f_out:
+#             writer = csv.DictWriter(f_out, fieldnames=OUTPUT_FIELDNAMES)
+#             writer.writeheader()
+#         return
+# 
+#     all_cols = set(rows[0].keys())
+#     param_col = next((c for c in LONG_FORMAT_PARAM_COL_CANDIDATES if c in all_cols), None)
+#     value_col = next((c for c in LONG_FORMAT_VALUE_COL_CANDIDATES if c in all_cols), None)
+# 
+#     if param_col and value_col:
+#         print(f"[FORMAT] Detected long-format CSV (parameter column='{param_col}', value column='{value_col}'). Pivoting to one record per patient.")
+#         wide_rows = _pivot_long_format(rows, param_col, value_col)
+#     else:
+#         print("[FORMAT] Detected wide-format CSV (one column per lab). Using rows as-is.")
+#         wide_rows = rows
+# 
+#     rows_out = []
+#     for row in wide_rows:
+#         patient = {k: row.get(k) for k in PATIENT_COLUMNS if k in row}
+#         labs = {k: v for k, v in row.items() if k not in PATIENT_COLUMNS}
+# 
+#         # --- DEBUG: print exactly what was fetched from the CSV for
+#         # this patient, BEFORE running any evaluator. Use this to
+#         # confirm column names/values are being read correctly and
+#         # that a rule not firing is a threshold issue, not a
+#         # missing/misnamed-column issue.
+#         print(f"\n[FETCHED] patient_id={patient.get('patient_id', '')}")
+#         print(f"  patient: {patient}")
+#         print(f"  labs:")
+#         for k, v in labs.items():
+#             print(f"    {k} = {v!r}")
+# 
+#         results = evaluate_all(labs, patient)
+# 
+#         # --- DEBUG: print every evaluator's result (even "" / no
+#         # pattern), so you can confirm whether a rule is firing based
+#         # on the fetched values above.
+#         print(f"  evaluations:")
+#         for r in results:
+#             cat_display = r["Category"] if r["Category"] else "(no pattern)"
+#             print(f"    {r['Condition']}: {cat_display}  |  {r.get('Values', '')}")
+# 
+#         for r in results:
+#             # Only show the condition if it hit "Significant Pattern"
+#             # or "Early Pattern" — skip blank/no-pattern results.
+#             if r["Category"] not in VISIBLE_CATEGORIES:
+#                 continue
+#             cat = r["Category"]
+#             domain = CONDITION_DOMAINS.get(r["Condition"], "General Health")
+#             
+#             
+#             blood_marker = r.get("TriggeredValues", "") if cat in {"Significant Pattern", "Early Pattern", "Elevated susceptibility"} else ""
+#             all_markers = r.get("TriggeredValues") or r.get("PartialTriggered") or ""
+#             mapped_category = _map_category_message(cat, all_markers)
+#             rows_out.append({
+#                 "Domain": domain,
+#                 "Condition": r["Condition"],
+#                 "Category": cat,
+#                 "DNA Marker(s)": "",  # Placeholder for future integration with genetic data
+#                 "Blood Marker(s)": blood_marker,
+#                 "Triggering PRS": "",
+#                 "Snapshot Category": mapped_category,
+#                 "All Blood Marker(s)": all_markers,
+#                 "RSID_m": "", 
+#                 "Pathogenicity_m": "", 
+#                 "Elevation_p": "", 
+#                 "Threshold_p": ""
+#             })
+# 
+#     with open(output_path, "w", newline="", encoding="utf-8") as f_out:
+#         writer = csv.DictWriter(f_out, fieldnames=OUTPUT_FIELDNAMES)
+#         writer.writeheader()
+#         writer.writerows(rows_out)
+# 
+# 
+# if __name__ == "__main__":
+#     if len(sys.argv) != 4:
+#         print("Usage: python blood_functions.py <input_labs.csv> <output_results.csv> <thresholds.json>")
+#         sys.exit(1)
+# 
+#     load_thresholds_from_file(sys.argv[3])
+#     process_csv(sys.argv[1], sys.argv[2])
+#     print(f"Done. Results written to {sys.argv[2]}")
