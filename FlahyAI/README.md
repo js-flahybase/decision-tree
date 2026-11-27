@@ -1,4 +1,4 @@
-# FlahyAI — Structure Overview
+# FlahyAI - Structure Overview
 
 This folder is a trimmed-down snapshot of how FlahyAI evaluates a patient's
 data and talks to them about it.
